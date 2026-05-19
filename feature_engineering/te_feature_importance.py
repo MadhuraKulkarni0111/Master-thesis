@@ -104,13 +104,13 @@ def build_features(df):
 
         feat = {}
         # --- sizes (raw + log) ---
-        feat["utr5_size"]    = len(utr5)
-        feat["cds_size"]     = len(cds)
-        feat["utr3_size"]    = len(utr3)
+        #feat["utr5_size"]    = len(utr5)  use only the log and use only the individual parts and not the whole length 
+        #feat["cds_size"]     = len(cds)  also check 
+        #feat["utr3_size"]    = len(utr3)
         feat["log_utr5"]     = np.log1p(len(utr5))
         feat["log_cds"]      = np.log1p(len(cds))
         feat["log_utr3"]     = np.log1p(len(utr3))
-        feat["log_tx"]       = np.log1p(len(full))
+        #feat["log_tx"]       = np.log1p(len(full))
 
         # --- GC content ---
         feat["gc_utr5"] = gc_content(utr5)
