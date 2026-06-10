@@ -2,11 +2,30 @@
 
 ## Repository Structure
 
-This project is organized into three branches:
+This project is organized into two in the folder feature_engineering branches:
 
 * main – Stable production version
-* code_updates – Ongoing development changes
 * separate_functions – Modularized pipeline (this branch contains individual scripts)
+
+## Repository Structure
+
+```text
+.
+├── README.md
+├── requirements.txt
+├── data/
+│   ├── input/
+│   └── output/
+├── scripts/
+│   ├── config.py
+│   ├── sequence_features.py
+│   ├── data_loader.py
+│   ├── models.py
+│   ├── importance.py
+│   ├── visualise.py
+│   └── run_pipeline.py
+└── results/
+```
 
 The pipeline implementation in this branch is fully modular and follows a structured workflow from raw data to final outputs.
 
@@ -44,12 +63,21 @@ Data → Feature Engineering → Model Training → Evaluation → Visualisation
 
 ---
 
-## How to Run the Pipeline
+## Installation
+
+Create a Python environment and install dependencies:
 
 ```bash
-python run_pipeline.py
+pip install -r requirements.txt
 ```
 
+## Running the Pipeline
+
+Run the complete workflow with:
+
+```bash
+python scripts/run_pipeline.py
+```
 ---
 
 ## Module Responsibilities
@@ -72,3 +100,6 @@ After running the pipeline, you will get:
 * Trained model results (cross-validation performance)
 * Feature importance CSV files
 * Visualisations (plots and heatmaps)
+
+
+
