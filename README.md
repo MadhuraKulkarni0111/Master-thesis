@@ -25,10 +25,13 @@ All files and folders currently being used can be found inside the folder labell
 
 To run pipeline update the path to where your datasets are stored. This can be found in scripts/config. 
 
-"/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/data/Human_data.xlsx" <--- update this for input directory for datasets 
+"/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/data/Human_data.xlsx"<- update this for input directory for datasets 
+
 "TE_HCT116" <--- cell line under consideration
+
 "Human_HCT116" 
-"/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/results/" <--- update this for output directory for results
+
+"/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/results/" <- update this for output directory for results
 
 ---
 
