@@ -21,23 +21,24 @@ This is the ONLY file we will need to edit when:
 
 DATASETS = [
     (
-        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/Human_data.xlsx",   # ← update this
+        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/data/Human_data.xlsx",   
         "TE_HCT116",
         "Human_HCT116",
-        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/"  # ← update this
+        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/results/"  
     ),
     (
-        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/Mouse_data.xlsx",   # ← update this
+        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/data/Mouse_data.xlsx",  
         "TE_4T1",
         "Mouse_4T1",
-        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/"  # ← update this
+        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/results/"  
     ),
 ]
 
 # ── Feature engineering settings ─────────────────────────────────────────────
 
 # Codons that terminate translation — excluded from codon usage features
-STOP_CODONS = {"TAA", "TAG", "TGA"}
+# STOP_CODONS = {"TAA", "TAG", "TGA"}
+STOP_CODONS = { }
 
 # ── Visualisation settings ────────────────────────────────────────────────────
 

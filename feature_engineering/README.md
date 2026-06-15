@@ -1,21 +1,14 @@
 # Sequence Analysis Pipeline
 
-## Repository Structure
-
-This project is organized into two in the folder feature_engineering branches:
-
-* main – Stable production version
-* separate_functions – Modularized pipeline (this branch contains individual scripts)
+All files and folders currently being used can be found inside the folder labelled feature_engineering in branch separate_functions 
 
 ## Repository Structure
 
 ```text
 .
-├── README.md
 ├── requirements.txt
 ├── data/
 │   ├── input/
-│   └── output/
 ├── scripts/
 │   ├── config.py
 │   ├── sequence_features.py
@@ -26,8 +19,16 @@ This project is organized into two in the folder feature_engineering branches:
 │   └── run_pipeline.py
 └── results/
 ```
+---
 
-The pipeline implementation in this branch is fully modular and follows a structured workflow from raw data to final outputs.
+## Updating paths 
+
+To run pipeline update the path to where your datasets are stored. This can be found in scripts/config. 
+
+"/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/data/Human_data.xlsx" <--- update this for input directory for datasets 
+"TE_HCT116" <--- cell line under consideration
+"Human_HCT116" 
+"/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/results/" <--- update this for output directory for results
 
 ---
 
@@ -35,7 +36,7 @@ The pipeline implementation in this branch is fully modular and follows a struct
 
 The entire workflow follows a sequence:
 
-Data → Feature Engineering → Model Training → Evaluation → Visualisation**
+Data → Feature Engineering → Model Training → Evaluation → Visualisation
 
 1. Data Loading
 
@@ -49,7 +50,7 @@ Data → Feature Engineering → Model Training → Evaluation → Visualisation
 
 3. Model Training
 
-   * Machine learning models are defined and trained.
+   * Machine learning models like Lasso, Elastic net, Random forest and LGBM are defined and trained.
    * Cross-validation is used for evaluation.
 
 4. Feature Importance
