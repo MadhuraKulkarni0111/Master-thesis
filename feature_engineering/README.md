@@ -16,7 +16,8 @@ All files and folders currently being used can be found inside the folder labell
 │   ├── models.py
 │   ├── importance.py
 │   ├── visualise.py
-│   └── run_pipeline.py
+│   ├── run_pipeline.py
+│   └── model_results.py
 └── results/
 ```
 ---
@@ -90,6 +91,7 @@ python scripts/run_pipeline.py
 | `models.py`            | Model definitions, training, and cross-validation                        |
 | `importance.py`        | Feature importance extraction and export                                 |
 | `visualise.py`         | All plots and visual outputs                                             |
+| `model_results.py`     | outputs coefficient and cv results into a csv file                                          |
 
 ---
 
