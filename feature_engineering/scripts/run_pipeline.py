@@ -24,6 +24,7 @@ Pipeline order
         ↓
     models.py           → cross-validate (predefined splits) + fit on full data
         ↓
+    results.py          → export R² scores to RESULTS_DIR
     importance.py       → extract importances and signed coefficients
         ↓
     visualise.py        → bar charts and heatmap
@@ -33,11 +34,12 @@ Pipeline order
 import warnings
 warnings.filterwarnings("ignore")
 
-from config   import DATASETS
-from data_loader import load_and_prepare
-from models      import fit_models
-from importance  import get_importances, save_importance_csv
-from visualise   import plot_top_features, plot_model_comparison
+from config         import DATASETS
+from data_loader    import load_and_prepare
+from models         import fit_models
+from model_results  import save_r2_results
+from importance     import get_importances, save_importance_csv
+from visualise      import plot_top_features, plot_model_comparison
 
 
 def run_dataset(path, te_col, label, out_prefix):
@@ -50,25 +52,28 @@ def run_dataset(path, te_col, label, out_prefix):
     X, y, folds, feature_names = load_and_prepare(path, te_col)
 
     # 2. cross-validate and fit all four models
-    fitted_models = fit_models(X, y, folds, feature_names, label)
+    fitted_models, cv_scores  = fit_models(X, y, folds, feature_names, label)
 
-    # 3. extract importances from fitted models
+     # 3. export R^2 results to the results folder
+    save_r2_results(cv_scores, label)
+
+    # 4. extract importances from fitted models
     importances = get_importances(fitted_models, feature_names)
 
-    # 4. visualise
+    # 5. visualise
     plot_top_features(
         importances, fitted_models, feature_names,
         label, out_prefix
     )
     plot_model_comparison(importances, label, out_prefix)
 
-    # 5. save CSV table
+    # 6. save CSV table
     save_importance_csv(
         importances, fitted_models, feature_names,
         label, out_prefix
     )
 
-    print(f"\n  ✓ {label} complete — outputs saved to: {out_prefix}_*")
+    print(f"\n   {label} complete — outputs saved to: {out_prefix}_*")
 
 
 def main():

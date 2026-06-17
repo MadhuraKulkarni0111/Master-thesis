@@ -59,6 +59,10 @@ MODEL_COLORS = {
     "LightGBM":     "#B07AA1",   # purple
 }
 
+# -- Defining results path -----------------------------------------------------
+  
+RESULTS_DIR = "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/results/"  
+
 # ── Model hyperparameters ─────────────────────────────────────────────────────
 # Kept here so you can tune them without touching the model definition code.
 

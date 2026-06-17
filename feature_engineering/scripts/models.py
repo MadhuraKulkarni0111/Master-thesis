@@ -126,22 +126,25 @@ def build_models():
 
 def fit_models(X, y, folds, feature_names, label):
     """
-    Cross-validate and then fully fit all four models.
-
-    For each model:
-      1. Run cross_val_score using the pre-defined dataset splits to get
-         one R² per fold. This measures generalisation — how well the model
-         predicts TE for genes it has never seen during training.
-      2. Print the mean R² ± standard deviation and all per-fold scores.
-      3. Refit the model on the FULL dataset so that feature importances
-         and coefficients are computed from all available data.
-
-    Why refit on the full dataset after CV?
-    The CV scores tell you how well the model generalises. The final fit
-    on all data gives you the most information-rich set of coefficients
-    and importances for biological interpretation — using only 90% of
-    the data for the final model would throw away useful signal.
-
+    Cross-validate (out-of-fold) and then fully fit all four models.
+ 
+    Uses cross_val_predict instead of cross_val_score. The difference:
+ 
+      cross_val_score   → returns one R² per fold (10 numbers), then you
+                          average them. Each fold is weighted equally
+                          regardless of size.
+ 
+      cross_val_predict → returns one PREDICTION per gene (not a score).
+                          Every gene gets predicted exactly once, by
+                          whichever fold held it out as test data. These
+                          predictions are then compared to the true y
+                          values ALL AT ONCE to get a single R² — this is
+                          the "out-of-fold" (OOF) R², which weights every
+                          gene equally rather than every fold equally.
+ 
+    Both per-fold R² (for variance/stability across folds) and the single
+    OOF R² (the more standard reported metric) are computed and returned.
+ 
     Parameters
     ----------
     X            : np.ndarray  shape (n_genes, n_features)
@@ -149,36 +152,60 @@ def fit_models(X, y, folds, feature_names, label):
     folds        : np.ndarray  shape (n_genes,)  — fold assignments
     feature_names: list of str
     label        : str  — dataset name for display
-
+ 
     Returns
     -------
-    dict : {model_name: fitted model}
+    fitted     : dict  {model_name: fitted model}
+    cv_scores  : dict  {model_name: dict with keys
+                         "oof_r2"        → single float, the pooled R²
+                         "per_fold_r2"   → np.ndarray, one R² per fold
+                         "oof_predictions" → np.ndarray, per-gene predictions
+                        }
     """
     cv_splits = make_predefined_splits(folds)
     n_folds   = len(cv_splits)
     models    = build_models()
     fitted    = {}
-
+    cv_scores = {}
+ 
     print(f"\n{'='*60}")
     print(f"  Dataset : {label}")
     print(f"  Samples : {X.shape[0]}   Features: {X.shape[1]}")
     print(f"  CV      : {n_folds}-fold  (pre-defined dataset splits)")
     print(f"{'='*60}")
-
+ 
     for name, model in models.items():
-        # 1. Generate out-of-fold predictions for the entire dataset
-        y_pred = cross_val_predict(
+        # one prediction per gene, made by the fold that held it out
+        oof_preds = cross_val_predict(
             model, X, y,
             cv=cv_splits,
             n_jobs=-1
         )
-        
-        # 2. Calculate a singular, comprehensive R² score 
-        overall_r2 = r2_score(y, y_pred)
-        print(f"  {name:<14}  Overall CV R² = {overall_r2:.4f}")
-
-        # 3. Refit on full dataset for importance extraction
+ 
+        # single pooled R² across all genes (out-of-fold R²)
+        oof_r2 = r2_score(y, oof_preds)
+ 
+        # also compute per-fold R² for stability/variance reporting
+        per_fold_r2 = np.array([
+            r2_score(y[test_idx], oof_preds[test_idx])
+            for _, test_idx in cv_splits
+        ])
+ 
+        print(f"  {name:<14}  OOF R² = {oof_r2:.4f}   "
+              f"(per-fold mean = {per_fold_r2.mean():.4f} "
+              f"± {per_fold_r2.std():.4f})")
+        print(f"  {'':14}  per fold: "
+              f"{', '.join(f'{s:.3f}' for s in per_fold_r2)}")
+ 
+        cv_scores[name] = {
+            "oof_r2":          oof_r2,
+            "per_fold_r2":     per_fold_r2,
+            "oof_predictions": oof_preds,
+        }
+ 
+        # refit on full dataset for importance extraction
         model.fit(X, y)
         fitted[name] = model
-
-    return fitted
+ 
+    return fitted, cv_scores
+ 
