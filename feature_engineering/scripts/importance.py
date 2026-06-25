@@ -17,7 +17,6 @@ import pandas as pd
 
 from config import TOP_N_CSV
 
-
 def get_importances(fitted_models, feature_names):
     """
     Extract a feature importance score for every feature from each model.
@@ -78,9 +77,13 @@ def get_importances(fitted_models, feature_names):
         fitted_models["LightGBM"].feature_importances_,
         index=feature_names
     )
+    # XGBoost: importance_type="gain" was set in build_models()
+    imp["XGBoost"] = pd.Series(
+        fitted_models["XGBoost"].feature_importances_,
+        index=feature_names
+    )
 
     return imp
-
 
 def save_importance_csv(imp_dict, fitted_models, feature_names,
                         label, out_prefix):
@@ -110,10 +113,15 @@ def save_importance_csv(imp_dict, fitted_models, feature_names,
     -------
     str : path to the saved CSV file
     """
-    csv_path = f"{out_prefix}_top_features.csv"
+    safe_label = label.replace(" ", "_")
+    csv_path = f"{out_prefix}_{safe_label}_top_features.csv"    
+    #csv_path = f"{out_prefix}_top_features.csv"
     rows = []
 
     for mname, imp in imp_dict.items():
+        print("Processing:", mname)
+        top_features = imp.nlargest(TOP_N_CSV)
+        print(top_features.head())
         for feat, val in imp.nlargest(TOP_N_CSV).items():
             signed = np.nan
             if mname in ("Lasso", "ElasticNet"):
