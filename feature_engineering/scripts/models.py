@@ -20,6 +20,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import cross_val_predict  
 from sklearn.metrics import r2_score                  
 import lightgbm as lgb
+from xgboost import XGBRegressor
+
 
 from config import (
     LASSO_ALPHA,
@@ -28,13 +30,20 @@ from config import (
     LGBM_N_ESTIMATORS, LGBM_LEARNING_RATE, LGBM_NUM_LEAVES,
     LGBM_MIN_CHILD_SAMPLES, LGBM_SUBSAMPLE, LGBM_COLSAMPLE,
     LGBM_RANDOM_STATE,
+    XGB_N_ESTIMATORS,
+    XGB_LEARNING_RATE,
+    XGB_MAX_DEPTH,
+    XGB_SUBSAMPLE,
+    XGB_COLSAMPLE,
+    XGB_RANDOM_STATE,
 )
+
 from data_loader import make_predefined_splits
 
 
 def build_models():
     """
-    Instantiate all four models with their hyperparameters from config.py.
+    Instantiate all five models with their hyperparameters from config.py.
 
     Model descriptions
     ------------------
@@ -77,6 +86,15 @@ def build_models():
             count because it weights each use by how much it reduced error.
         subsample=0.8 and colsample_bytree=0.8 add randomness similar to RF's
         bagging, reducing overfitting. Also scale-invariant.
+
+    XGBoost 
+        Gradient-boosted decision trees built sequentially to minimize
+        prediction error. Unlike LightGBM's leaf-wise growth strategy,
+        XGBoost typically grows trees level-wise, making it more
+        conservative and often less prone to overfitting. It includes
+        built-in regularization and supports feature importance based on
+        gain, cover, or split frequency. Like RandomForest and LightGBM,
+        it is scale-invariant and does not require StandardScaler.
 
     Returns
     -------
@@ -121,12 +139,23 @@ def build_models():
             random_state=LGBM_RANDOM_STATE,
             verbose=-1
         ),
+
+        "XGBoost": XGBRegressor(
+            n_estimators=XGB_N_ESTIMATORS,
+            learning_rate=XGB_LEARNING_RATE,
+            max_depth=XGB_MAX_DEPTH,
+            subsample=XGB_SUBSAMPLE,
+            colsample_bytree=XGB_COLSAMPLE,
+            random_state=XGB_RANDOM_STATE,
+            objective="reg:squarederror",
+            n_jobs=-1
+        ),
     }
 
 
 def fit_models(X, y, folds, feature_names, label):
     """
-    Cross-validate (out-of-fold) and then fully fit all four models.
+    Cross-validate (out-of-fold) and then fully fit all five models.
  
     Uses cross_val_predict instead of cross_val_score. The difference:
  
@@ -206,6 +235,7 @@ def fit_models(X, y, folds, feature_names, label):
         # refit on full dataset for importance extraction
         model.fit(X, y)
         fitted[name] = model
+        print(fitted.keys())
  
     return fitted, cv_scores
  
