@@ -37,8 +37,8 @@ DATASETS = [
 # ── Feature engineering settings ─────────────────────────────────────────────
 
 # Codons that terminate translation — excluded from codon usage features
-# STOP_CODONS = {"TAA", "TAG", "TGA"}
-STOP_CODONS = { }
+STOP_CODONS = {"TAA", "TAG", "TGA"}
+# STOP_CODONS = { }
 
 # ── Visualisation settings ────────────────────────────────────────────────────
 
@@ -57,6 +57,7 @@ MODEL_COLORS = {
     "ElasticNet":   "#F28E2B",   # orange
     "RandomForest": "#59A14F",   # green
     "LightGBM":     "#B07AA1",   # purple
+    "XGBoost":      "#E15759" # red
 }
 
 # -- Defining results path -----------------------------------------------------
@@ -84,3 +85,11 @@ LGBM_MIN_CHILD_SAMPLES = 20
 LGBM_SUBSAMPLE       = 0.8
 LGBM_COLSAMPLE       = 0.8
 LGBM_RANDOM_STATE    = 42
+
+# XGBoost Parameters
+XGB_N_ESTIMATORS = 300
+XGB_LEARNING_RATE = 0.05
+XGB_MAX_DEPTH = 6
+XGB_SUBSAMPLE = 0.8
+XGB_COLSAMPLE = 0.8
+XGB_RANDOM_STATE = 42
