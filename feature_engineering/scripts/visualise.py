@@ -21,6 +21,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
+import shap
 
 from config import MODEL_COLORS, TOP_N_BAR, TOP_N_HEATMAP
 
@@ -34,7 +35,7 @@ def plot_top_features(imp_dict, fitted_models, feature_names,
         Shows the top-N features ranked by their importance score.
         For Lasso/ElasticNet this is |coefficient|.
         For RandomForest this is MDI (mean decrease in impurity).
-        For LightGBM this is total gain across all splits.
+        For LightGBM anf XGboost this is total gain across all splits.
 
     Right panel — direction
         For Lasso and ElasticNet: signed coefficients coloured by direction.
@@ -59,7 +60,9 @@ def plot_top_features(imp_dict, fitted_models, feature_names,
     -------
     str : path to the saved PNG
     """
-    fig_path = f"{out_prefix}_feature_importance.png"
+    safe_label = label.replace(" ", "_")
+    fig_path = f"{out_prefix}_{safe_label}_feature_importance.png"
+    #fig_path = f"{out_prefix}_feature_importance.png"
     n_models  = len(imp_dict)
 
     fig, axes = plt.subplots(
@@ -85,11 +88,11 @@ def plot_top_features(imp_dict, fitted_models, feature_names,
         ax_imp.set_yticks(range(top_n))
         ax_imp.set_yticklabels(top.index[::-1], fontsize=8)
         ax_imp.set_xlabel(
-            "|Coefficient|"  if mname in ("Lasso", "ElasticNet") else
-            "Gain Importance" if mname == "LightGBM" else
-            "MDI Importance",
+            "|Coefficient|" if mname in ("Lasso", "ElasticNet") else
+            "Gain Importance" if mname in ("LightGBM", "XGBoost") else
+            "MDI Importance", 
             fontsize=10
-        )
+            )
         ax_imp.set_title(
             f"{mname} — Top {top_n} features",
             fontsize=12, fontweight="bold", color=color
@@ -131,8 +134,12 @@ def plot_top_features(imp_dict, fitted_models, feature_names,
                 range(top_n), top.values[::-1],
                 color=color, alpha=0.85, edgecolor="white"
             )
-            xlabel = "Gain Importance" if mname == "LightGBM" else "MDI Importance"
-            note   = "gain-weighted"   if mname == "LightGBM" else "mean decrease in impurity"
+            if mname in ("LightGBM", "XGBoost"):
+                xlabel = "Gain Importance"
+                note = "gain-weighted"
+            else:
+                xlabel = "MDI Importance"
+                note = "mean decrease in impurity"
             ax_coef.set_xlabel(xlabel, fontsize=10)
             ax_coef.set_title(
                 f"{mname} — Importance ({note})\n"
@@ -152,7 +159,7 @@ def plot_top_features(imp_dict, fitted_models, feature_names,
 
 def plot_model_comparison(imp_dict, label, out_prefix, top_n=TOP_N_HEATMAP):
     """
-    Heatmap comparing feature importances across all four models.
+    Heatmap comparing feature importances across all five models.
 
     Takes the union of the top-N features from each model, then builds a
     matrix of (features × models) where each model's column is normalised
@@ -175,7 +182,9 @@ def plot_model_comparison(imp_dict, label, out_prefix, top_n=TOP_N_HEATMAP):
     -------
     str : path to the saved PNG
     """
-    fig_path = f"{out_prefix}_model_comparison.png"
+    safe_label = label.replace(" ", "_")
+    fig_path = f"{out_prefix}_{safe_label}_model_comparison.png"
+    #fig_path = f"{out_prefix}_model_comparison.png"
 
     # union of top-N features from every model
     top_features = set()
@@ -209,3 +218,4 @@ def plot_model_comparison(imp_dict, label, out_prefix, top_n=TOP_N_HEATMAP):
     plt.close()
     print(f"  Saved: {fig_path}")
     return fig_path
+
