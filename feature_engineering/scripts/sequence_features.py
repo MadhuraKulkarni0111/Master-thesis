@@ -17,12 +17,18 @@ codon_freq(cds_seq)      → dict  (61 features: codon_AAA … codon_TTT)
 uaug_count(utr5_seq)     → int
 build_features(df)       → pd.DataFrame  (133 features per gene)
 """
+print("extracting features")
 
 import numpy as np
 import pandas as pd
+import math
+import RNA
 from itertools import product
 
+#from Bio.SeqUtils.CodonUsage import CodonAdaptationIndex
+
 from config import STOP_CODONS
+from config import CAI_WEIGHTS
 
 # Pre-compute all 61 sense codons once at import time
 ALL_CODONS = [
@@ -60,6 +66,8 @@ def extract_regions(row):
 
 # ── Nucleotide composition ────────────────────────────────────────────────────
 
+print("extracting GC conetnt")
+
 def gc_content(seq):
     """
     GC fraction of a sequence.
@@ -74,6 +82,8 @@ def gc_content(seq):
         return np.nan
     return (seq.count("G") + seq.count("C")) / len(seq)
 
+
+print("extracting mononucleotide frequencies")
 
 def mono_freq(seq, label):
     """
@@ -94,6 +104,8 @@ def mono_freq(seq, label):
     return {f"{label}_{nt}": seq.count(nt) / n for nt in "ATGC"}
 
 
+print("extracting dinucleotide frequencies")
+
 def di_freq(seq, label):
     """
     Fraction of each of the 16 possible dinucleotides in a region.
@@ -113,6 +125,8 @@ def di_freq(seq, label):
 
 
 # ── Codon usage ───────────────────────────────────────────────────────────────
+
+print("extracting codon frequencies")
 
 def codon_freq(cds_seq):
     """
@@ -149,6 +163,9 @@ def codon_freq(cds_seq):
 
 # ── Upstream AUG count ────────────────────────────────────────────────────────
 
+
+print("extracting AUG")
+
 def uaug_count(utr5_seq):
     """
     Count upstream AUG codons in the 5'UTR.
@@ -160,8 +177,104 @@ def uaug_count(utr5_seq):
     """
     return utr5_seq.count("ATG")
 
+# ── Minimum folding energy  ────────────────────────────────────────────────────────
+
+print("extracting MFE")
+
+def mfe_fold(seq):
+    """
+    Compute minimum free energy (MFE) using ViennaRNA.
+
+    Parameters
+    ----------
+    seq : str
+        DNA or RNA sequence.
+
+    Returns
+    -------
+    float
+        Minimum free energy in kcal/mol.
+        Returns np.nan for empty sequences.
+    """
+    if not seq:
+        return np.nan
+
+    seq = seq.replace("T", "U")
+
+    
+    try:
+        _, mfe = RNA.fold(seq)
+        return mfe
+    except Exception:
+        return np.nan
+
+# ── Codon Adaption Index (CAI)  ────────────────────────────────────────────────────────
+
+def calculate_cai(cds_seq):
+    """
+    Calculate Codon Adaptation Index.
+    """
+
+    codons = []
+
+    for i in range(0, len(cds_seq) - 2, 3):
+        codon = cds_seq[i:i+3]
+
+        if codon in CAI_WEIGHTS:
+            codons.append(CAI_WEIGHTS[codon])
+
+    if len(codons) == 0:
+        return np.nan
+
+    return math.exp(
+        sum(math.log(w) for w in codons) / len(codons)
+    )
+
+# ── Kozak Index Sequence Score (KISS)  ────────────────────────────────────────────────────────
+
+def kiss_score(utr5, cds):
+    """
+    Kozak Similarity Score.
+
+    Uses positions:
+    -6 -5 -4 -3 -2 -1 AUG +4
+
+    Returns a score between 0 and 1.
+    """
+
+    if len(utr5) < 6 or len(cds) < 4:
+        return np.nan
+
+    context = utr5[-6:] + cds[:4]
+
+    score = 0
+
+    if context[0] == "G":
+        score += 1
+
+    if context[1] == "C":
+        score += 1
+
+    if context[2] == "C":
+        score += 1
+
+    if context[3] in ("A", "G"):
+        score += 1
+
+    if context[4] == "C":
+        score += 1
+
+    if context[5] == "C":
+        score += 1
+
+    if context[9] == "G":
+        score += 1
+
+    return score / 7
 
 # ── Master feature builder ────────────────────────────────────────────────────
+
+print("building features")
 
 def build_features(df):
     """
@@ -174,12 +287,15 @@ def build_features(df):
 
     Feature breakdown
     -----------------
-    Region sizes (raw + log)  :  7   (utr5, cds, utr3, log versions + log_tx)
+    Region sizes (log)        :  3   (utr5, cds, utr3, log versions + log_tx)
     GC content                :  4   (utr5, cds, utr3, full)
     uAUG count                :  1
     Mononucleotide frequencies: 12   (4 nt × 3 regions)
     Dinucleotide frequencies  : 48   (16 dinucs × 3 regions)
     Codon usage               : 61   (61 sense codons, CDS only)
+    RNA structure (MFE)       :  4   (5'UTR, CDS start, full transcript, 3'UTR)
+    CAI                       :  1   (codon adpation index scores)
+    Kozak (KISS)              :  1   (Kozak index seqience scores)
     ─────────────────────────────────
     Total                     : 133
 
@@ -216,6 +332,19 @@ def build_features(df):
         feat["gc_utr3"] = gc_content(utr3)
         feat["gc_full"] = gc_content(full)
 
+        # MFE from rna vienna 
+        feat["mfe_utr5"] = mfe_fold(utr5)
+        # feat["nmfe_utr5"] = mfe_fold(utr5) / len(utr5)
+        feat["mfe_cds"]  = mfe_fold(cds)
+        feat["mfe_utr3"] = mfe_fold(utr3)
+        feat["mfe_full"] = mfe_fold(full)
+
+        # CAI with the codon weights
+        feat["cai"] = calculate_cai(cds)
+
+        # KISS
+        feat["kozak_score"] = kiss_score(utr5, cds)
+
         # upstream AUG count
         feat["uAUG_count"] = uaug_count(utr5)
 
@@ -233,5 +362,7 @@ def build_features(df):
         feat.update(codon_freq(cds))
 
         records.append(feat)
+
+        print("Returning features")
 
     return pd.DataFrame(records, index=df.index)
