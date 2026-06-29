@@ -14,6 +14,7 @@ plot_model_comparison(imp_dict, label, out_prefix, top_n)
     Heatmap comparing top features across all models side by side.
     Saved as <out_prefix>_model_comparison.png
 """
+print("visualising)")
 
 import numpy as np
 import pandas as pd
