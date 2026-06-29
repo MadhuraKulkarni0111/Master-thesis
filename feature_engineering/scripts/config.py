@@ -19,18 +19,25 @@ This is the ONLY file we will need to edit when:
 #   output_prefix: path prefix for all output files produced for this dataset
 #                  (PNGs and CSVs will be saved as <output_prefix>_*.png / *.csv)
 
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
+DATA_DIR = BASE_DIR / "data"
+RESULT_DIR = BASE_DIR / "results"
+
 DATASETS = [
     (
-        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/data/Human_data.xlsx",   
+        DATA_DIR / "Human_data.xlsx",
         "TE_HCT116",
         "Human_HCT116",
-        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/results/"  
+        RESULT_DIR
     ),
     (
-        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/data/Mouse_data.xlsx",  
+        DATA_DIR / "Mouse_data.xlsx",
         "TE_4T1",
         "Mouse_4T1",
-        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/results/"  
+        RESULT_DIR
     ),
 ]
 
