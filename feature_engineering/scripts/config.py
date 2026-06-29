@@ -93,3 +93,115 @@ XGB_MAX_DEPTH = 6
 XGB_SUBSAMPLE = 0.8
 XGB_COLSAMPLE = 0.8
 XGB_RANDOM_STATE = 42
+
+# codon weight fo rmammalian cells for codon adaption index
+"""
+Relative adaptiveness values (w_i) for CAI calculation.
+
+Default: mammalian codon usage.
+Values can be replaced with species-specific tables.
+"""
+
+CAI_WEIGHTS = {
+
+    # Alanine
+    "GCT": 0.73,
+    "GCC": 1.00,
+    "GCA": 0.58,
+    "GCG": 0.34,
+
+    # Arginine
+    "CGT": 0.36,
+    "CGC": 0.82,
+    "CGA": 0.22,
+    "CGG": 0.40,
+    "AGA": 1.00,
+    "AGG": 0.72,
+
+    # Asparagine
+    "AAT": 0.77,
+    "AAC": 1.00,
+
+    # Aspartate
+    "GAT": 0.63,
+    "GAC": 1.00,
+
+    # Cysteine
+    "TGT": 0.71,
+    "TGC": 1.00,
+
+    # Glutamine
+    "CAA": 0.36,
+    "CAG": 1.00,
+
+    # Glutamate
+    "GAA": 1.00,
+    "GAG": 0.81,
+
+    # Glycine
+    "GGT": 0.49,
+    "GGC": 1.00,
+    "GGA": 0.55,
+    "GGG": 0.60,
+
+    # Histidine
+    "CAT": 0.58,
+    "CAC": 1.00,
+
+    # Isoleucine
+    "ATT": 0.53,
+    "ATC": 1.00,
+    "ATA": 0.18,
+
+    # Leucine
+    "TTA": 0.13,
+    "TTG": 0.40,
+    "CTT": 0.40,
+    "CTC": 1.00,
+    "CTA": 0.10,
+    "CTG": 0.92,
+
+    # Lysine
+    "AAA": 0.79,
+    "AAG": 1.00,
+
+    # Phenylalanine
+    "TTT": 0.58,
+    "TTC": 1.00,
+
+    # Proline
+    "CCT": 0.46,
+    "CCC": 1.00,
+    "CCA": 0.56,
+    "CCG": 0.32,
+
+    # Serine
+    "TCT": 0.42,
+    "TCC": 1.00,
+    "TCA": 0.33,
+    "TCG": 0.19,
+    "AGT": 0.41,
+    "AGC": 0.92,
+
+    # Threonine
+    "ACT": 0.53,
+    "ACC": 1.00,
+    "ACA": 0.46,
+    "ACG": 0.33,
+
+    # Tyrosine
+    "TAT": 0.59,
+    "TAC": 1.00,
+
+    # Valine
+    "GTT": 0.45,
+    "GTC": 0.61,
+    "GTA": 0.25,
+    "GTG": 1.00,
+
+    # Methionine
+    "ATG": 1.00,
+
+    # Tryptophan
+    "TGG": 1.00
+}
