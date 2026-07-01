@@ -19,25 +19,27 @@ This is the ONLY file we will need to edit when:
 #   output_prefix: path prefix for all output files produced for this dataset
 #                  (PNGs and CSVs will be saved as <output_prefix>_*.png / *.csv)
 
+'''
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 
 DATA_DIR = BASE_DIR / "data"
 RESULT_DIR = BASE_DIR / "results"
+'''
 
 DATASETS = [
     (
-        DATA_DIR / "Human_data.xlsx",
+        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/data/Human_data.xlsx",
         "TE_HCT116",
         "Human_HCT116",
-        RESULT_DIR
+        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/results"
     ),
     (
-        DATA_DIR / "Mouse_data.xlsx",
+        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/data/Mouse_data.xlsx",
         "TE_4T1",
         "Mouse_4T1",
-        RESULT_DIR
+        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/results"
     ),
 ]
 
@@ -212,3 +214,8 @@ CAI_WEIGHTS = {
     # Tryptophan
     "TGG": 1.00
 }
+
+# ------ config settings for the window size for MFE calculation ------------------
+
+START_WINDOW_UPSTREAM = 30
+START_WINDOW_DOWNSTREAM = 30
