@@ -63,6 +63,46 @@ def extract_regions(row):
     cds = int(row["cds_size"])  if pd.notna(row["cds_size"])  else 0
     return seq[:u5], seq[u5 : u5 + cds], seq[u5 + cds:]
 
+# ── Extracting start codon for MFE calculation ────────────────────────────────────────────────────
+
+def get_start_codon_window(utr5, cds, upstream=30, downstream=30):
+    """
+    Extract a window centered on the start codon.
+
+    The window consists of:
+        - up to `upstream` nucleotides from the end of the 5'UTR
+        - the first `downstream` nucleotides of the CDS
+
+    Returns
+    -------
+    str
+        DNA sequence surrounding the translation start site.
+    """
+
+    left = utr5[-upstream:] if len(utr5) >= upstream else utr5
+    right = cds[:downstream]
+
+    return left + right
+
+
+def get_start_codon_window(utr5, cds, upstream=30, downstream=30):
+    """
+    Extract a window centered on the start codon.
+
+    The window consists of:
+        - up to `upstream` nucleotides from the end of the 5'UTR
+        - the first `downstream` nucleotides of the CDS
+
+    Returns
+    -------
+    str
+        DNA sequence surrounding the translation start site.
+    """
+
+    left = utr5[-upstream:] if len(utr5) >= upstream else utr5
+    right = cds[:downstream]
+
+    return left + right
 
 # ── Nucleotide composition ────────────────────────────────────────────────────
 
@@ -293,7 +333,7 @@ def build_features(df):
     Mononucleotide frequencies: 12   (4 nt × 3 regions)
     Dinucleotide frequencies  : 48   (16 dinucs × 3 regions)
     Codon usage               : 61   (61 sense codons, CDS only)
-    RNA structure (MFE)       :  4   (5'UTR, CDS start, full transcript, 3'UTR)
+    RNA structure (MFE)       :  1   (only around the start codon)
     CAI                       :  1   (codon adpation index scores)
     Kozak (KISS)              :  1   (Kozak index seqience scores)
     ─────────────────────────────────
@@ -333,11 +373,24 @@ def build_features(df):
         feat["gc_full"] = gc_content(full)
 
         # MFE from rna vienna 
+        start_window = get_start_codon_window(utr5, cds)
+
+        start_window = get_start_codon_window(
+            utr5,
+            cds,
+            upstream=START_WINDOW_UPSTREAM,
+            downstream=START_WINDOW_DOWNSTREAM,
+            )
+        
+        feat["mfe_start"] = mfe_fold(start_window)
+
+        '''
         feat["mfe_utr5"] = mfe_fold(utr5)
         # feat["nmfe_utr5"] = mfe_fold(utr5) / len(utr5)
         feat["mfe_cds"]  = mfe_fold(cds)
         feat["mfe_utr3"] = mfe_fold(utr3)
-        feat["mfe_full"] = mfe_fold(full)
+        #feat["mfe_full"] = mfe_fold(full)
+        '''
 
         # CAI with the codon weights
         feat["cai"] = calculate_cai(cds)
@@ -366,3 +419,4 @@ def build_features(df):
         print("Returning features")
 
     return pd.DataFrame(records, index=df.index)
+print("RETURNED ALL FEATURES")
