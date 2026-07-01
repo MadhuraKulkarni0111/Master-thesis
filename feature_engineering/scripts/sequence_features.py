@@ -29,6 +29,8 @@ from itertools import product
 
 from config import STOP_CODONS
 from config import CAI_WEIGHTS
+from config import START_WINDOW_UPSTREAM
+from config import  START_WINDOW_DOWNSTREAM 
 
 # Pre-compute all 61 sense codons once at import time
 ALL_CODONS = [
@@ -419,4 +421,3 @@ def build_features(df):
         print("Returning features")
 
     return pd.DataFrame(records, index=df.index)
-print("RETURNED ALL FEATURES")
