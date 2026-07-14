@@ -108,8 +108,6 @@ def get_start_codon_window(utr5, cds, upstream=30, downstream=30):
 
 # ── Nucleotide composition ────────────────────────────────────────────────────
 
-print("extracting GC conetnt")
-
 def gc_content(seq):
     """
     GC fraction of a sequence.
@@ -123,9 +121,6 @@ def gc_content(seq):
     if not seq:
         return np.nan
     return (seq.count("G") + seq.count("C")) / len(seq)
-
-
-print("extracting mononucleotide frequencies")
 
 def mono_freq(seq, label):
     """
@@ -145,9 +140,6 @@ def mono_freq(seq, label):
         return {f"{label}_{nt}": np.nan for nt in "ATGC"}
     return {f"{label}_{nt}": seq.count(nt) / n for nt in "ATGC"}
 
-
-print("extracting dinucleotide frequencies")
-
 def di_freq(seq, label):
     """
     Fraction of each of the 16 possible dinucleotides in a region.
@@ -165,10 +157,42 @@ def di_freq(seq, label):
         return {f"{label}_{d}": np.nan for d in dinucs} 
     return {f"{label}_{d}": seq.count(d) / n for d in dinucs} # --> normalisation
 
+def kmer_freq(seq, label, k):
+    """
+    Relative frequencies of all possible k-mers.
+
+    Parameters
+    ----------
+    seq : str
+    label : str
+    k : int
+
+    Returns
+    -------
+    dict
+        {label_AAAA : frequency, ...}
+    """
+
+    kmers = ["".join(p) for p in product("ATGC", repeat=k)] # producte runs combinations and join converts ["X", "Y"] into [X,Y]
+    n = len(seq) - k + 1
+
+    if n <= 0:
+        return {f"{label}_{kmer}": np.nan for kmer in kmers}
+
+    counts = {kmer: 0 for kmer in kmers}
+
+    for i in range(n):
+        kmer = seq[i:i+k]
+
+        if "N" not in kmer: # counts the total frequency of each k-mer
+            counts[kmer] += 1
+
+    return { 
+        f"{label}_{kmer}": counts[kmer] / n # ---> normalisation
+        for kmer in kmers
+    }
 
 # ── Codon usage ───────────────────────────────────────────────────────────────
-
-print("extracting codon frequencies")
 
 def codon_freq(cds_seq):
     """
@@ -205,9 +229,6 @@ def codon_freq(cds_seq):
 
 # ── Upstream AUG count ────────────────────────────────────────────────────────
 
-
-print("extracting AUG")
-
 def uaug_count(utr5_seq):
     """
     Count upstream AUG codons in the 5'UTR.
@@ -220,8 +241,6 @@ def uaug_count(utr5_seq):
     return utr5_seq.count("ATG")
 
 # ── Minimum folding energy  ────────────────────────────────────────────────────────
-
-print("extracting MFE")
 
 def mfe_fold(seq):
     """
@@ -316,8 +335,6 @@ def kiss_score(utr5, cds):
 
 # ── Master feature builder ────────────────────────────────────────────────────
 
-print("building features")
-
 def build_features(df):
     """
     Engineer all 133 features for every gene in the dataframe.
@@ -329,17 +346,20 @@ def build_features(df):
 
     Feature breakdown
     -----------------
-    Region sizes (log)        :  3   (utr5, cds, utr3, log versions + log_tx)
-    GC content                :  4   (utr5, cds, utr3, full)
-    uAUG count                :  1
-    Mononucleotide frequencies: 12   (4 nt × 3 regions)
-    Dinucleotide frequencies  : 48   (16 dinucs × 3 regions)
-    Codon usage               : 61   (61 sense codons, CDS only)
-    RNA structure (MFE)       :  1   (only around the start codon)
-    CAI                       :  1   (codon adpation index scores)
-    Kozak (KISS)              :  1   (Kozak index seqience scores)
+    Region sizes (log)        :     3   (utr5, cds, utr3, log versions + log_tx)
+    GC content                :     4   (utr5, cds, utr3, full)
+    uAUG count                :     1
+    Mononucleotide frequencies:     12  (4 nt × 3 regions)
+    Dinucleotide frequencies  :     48  (16 dinucs × 3 regions)
+    4-mer frequencies         :    768  (256 dinucs × 3 regions)
+    5-mer frequencies         :   3072  (1024 dinucs × 3 regions)
+    6-mer frequencies         :  12288  (4069  dinucs × 3 regions)
+    Codon usage               :     61  (61 sense codons, CDS only)
+    RNA structure (MFE)       :     1   (only around the start codon)
+    CAI                       :     1   (codon adpation index scores)
+    Kozak (KISS)              :     1   (Kozak index seqience scores)
     ─────────────────────────────────
-    Total                     : 133
+    Total                     :  5200
 
     Parameters
     ----------
@@ -412,6 +432,17 @@ def build_features(df):
         feat.update(di_freq(utr5, "utr5"))
         feat.update(di_freq(cds,  "cds"))
         feat.update(di_freq(utr3, "utr3"))
+
+        # k-mer, where k = 4,5,6
+        feat.update(kmer_freq(utr5, "utr5", 4))
+        feat.update(kmer_freq(cds, "cds", 4))
+        feat.update(kmer_freq(utr3, "utr3", 4))
+        feat.update(kmer_freq(utr5, "utr5", 5))
+        feat.update(kmer_freq(cds, "cds", 5))
+        feat.update(kmer_freq(utr3, "utr3", 5))
+        feat.update(kmer_freq(utr5, "utr5", 6))
+        feat.update(kmer_freq(cds, "cds", 6))
+        feat.update(kmer_freq(utr3, "utr3", 6))
 
         # codon usage — 61 sense codons from CDS only
         feat.update(codon_freq(cds))
