@@ -43,6 +43,11 @@ DATASETS = [
     ),
 ]
 
+# ── Sampling settings ─────────────────────────────────────────────────────────
+# Set to an integer to run on a subset of sequences (useful for quick testing).
+# Set to None to run on the full dataset.
+MAX_SAMPLES = 100
+
 # ── Feature engineering settings ─────────────────────────────────────────────
 
 # Codons that terminate translation — excluded from codon usage features
