@@ -16,6 +16,7 @@ make_predefined_splits(folds)
 import numpy as np
 import pandas as pd
 from sklearn.impute import SimpleImputer
+from config import RESULTS_DIR, MAX_SAMPLES   # add MAX_SAMPLES to the existing import
 
 from sequence_features import build_features
 
@@ -55,6 +56,11 @@ def load_and_prepare(path, te_col):
     df = pd.read_excel(path)
     df = df.dropna(subset=[te_col, "tx_sequence"])
     print(f"  Rows after dropping NA in target/sequence: {len(df)}")
+
+    # ── Subset for quick testing ───────────────────────────────────────────────
+    if MAX_SAMPLES is not None:
+        df = df.head(MAX_SAMPLES)
+        print(f"  Subsampled to {MAX_SAMPLES} sequences (MAX_SAMPLES is set in config.py)")
 
     # preserve fold assignments before feature engineering changes the index
     folds = df["fold"].values
