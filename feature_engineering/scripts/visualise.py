@@ -62,8 +62,8 @@ def plot_top_features(imp_dict, fitted_models, feature_names,
     str : path to the saved PNG
     """
     safe_label = label.replace(" ", "_")
-    fig_path = f"{out_prefix}_{safe_label}_feature_importance.png"
-    #fig_path = f"{out_prefix}_feature_importance.png"
+    fig_path = f"{out_prefix}_{safe_label}_feature_importance_n=100.png"
+    #fig_path = f"{out_prefix}_feature_importance_n=100.png"
     n_models  = len(imp_dict)
 
     fig, axes = plt.subplots(
@@ -89,7 +89,7 @@ def plot_top_features(imp_dict, fitted_models, feature_names,
         ax_imp.set_yticks(range(top_n))
         ax_imp.set_yticklabels(top.index[::-1], fontsize=8)
         ax_imp.set_xlabel(
-            "|Coefficient|" if mname in ("Lasso", "ElasticNet") else
+            "|Coefficient|" if mname in ("Lasso", "ElasticNet", "SVR") else
             "Gain Importance" if mname in ("LightGBM", "XGBoost") else
             "MDI Importance", 
             fontsize=10
@@ -103,7 +103,7 @@ def plot_top_features(imp_dict, fitted_models, feature_names,
         # ── Right panel: signed coefficients or repeated importance ───────
         ax_coef = axes[row_idx, 1]
 
-        if mname in ("Lasso", "ElasticNet"):
+        if mname in ("Lasso", "ElasticNet", "SVR"):
             # retrieve raw signed coefficients from inside the Pipeline
             signed = pd.Series(
                 fitted_models[mname].named_steps["model"].coef_,
@@ -184,7 +184,7 @@ def plot_model_comparison(imp_dict, label, out_prefix, top_n=TOP_N_HEATMAP):
     str : path to the saved PNG
     """
     safe_label = label.replace(" ", "_")
-    fig_path = f"{out_prefix}_{safe_label}_model_comparison.png"
+    fig_path = f"{out_prefix}_{safe_label}_model_comparison_n=100.png"
     #fig_path = f"{out_prefix}_model_comparison.png"
 
     # union of top-N features from every model
