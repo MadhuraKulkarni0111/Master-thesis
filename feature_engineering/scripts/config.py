@@ -33,20 +33,20 @@ DATASETS = [
         "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/data/Human_data.xlsx",
         "TE_HCT116",
         "Human_HCT116",
-        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/results"
+        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/results/"
     ),
     (
         "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/data/Mouse_data.xlsx",
         "TE_4T1",
         "Mouse_4T1",
-        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/results"
+        "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/results/"
     ),
 ]
 
 # ── Sampling settings ─────────────────────────────────────────────────────────
 # Set to an integer to run on a subset of sequences (useful for quick testing).
 # Set to None to run on the full dataset.
-MAX_SAMPLES = 100
+MAX_SAMPLES = None
 
 # ── Feature engineering settings ─────────────────────────────────────────────
 
@@ -71,7 +71,8 @@ MODEL_COLORS = {
     "ElasticNet":   "#F28E2B",   # orange
     "RandomForest": "#59A14F",   # green
     "LightGBM":     "#B07AA1",   # purple
-    "XGBoost":      "#E15759" # red
+    "XGBoost":      "#E15759", # red
+    "SVR" :         "#1B9E77" # teal 
 }
 
 # -- Defining results path -----------------------------------------------------
@@ -107,6 +108,12 @@ XGB_MAX_DEPTH = 6
 XGB_SUBSAMPLE = 0.8
 XGB_COLSAMPLE = 0.8
 XGB_RANDOM_STATE = 42
+
+# SVM parameters
+SVM_C = 1.0
+SVM_EPSILON = 0.1
+SVM_MAX_ITER = 10000
+SVM_RANDOM_STATE = 42
 
 # codon weight fo rmammalian cells for codon adaption index
 """
