@@ -46,7 +46,7 @@ DATASETS = [
 # ── Sampling settings ─────────────────────────────────────────────────────────
 # Set to an integer to run on a subset of sequences (useful for quick testing).
 # Set to None to run on the full dataset.
-MAX_SAMPLES = None
+MAX_SAMPLES = 500
 
 # ── Feature engineering settings ─────────────────────────────────────────────
 
@@ -110,10 +110,11 @@ XGB_COLSAMPLE = 0.8
 XGB_RANDOM_STATE = 42
 
 # SVM parameters
-SVM_C = 1.0
+SVM_C       = 1.0
 SVM_EPSILON = 0.1
-SVM_MAX_ITER = 10000
-SVM_RANDOM_STATE = 42
+SVM_KERNEL  = "rbf"
+SVM_GAMMA   = "scale"
+SVM_MAX_ITER = -1
 
 # codon weight fo rmammalian cells for codon adaption index
 """

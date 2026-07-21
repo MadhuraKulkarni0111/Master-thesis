@@ -21,9 +21,8 @@ from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import r2_score                  
 import lightgbm as lgb
 from xgboost import XGBRegressor
-from sklearn.svm import SVR, LinearSVR
-
-
+from sklearn.svm import SVR
+ 
 from config import (
     LASSO_ALPHA,
     ELASTICNET_ALPHA, ELASTICNET_L1RATIO,
@@ -31,14 +30,9 @@ from config import (
     LGBM_N_ESTIMATORS, LGBM_LEARNING_RATE, LGBM_NUM_LEAVES,
     LGBM_MIN_CHILD_SAMPLES, LGBM_SUBSAMPLE, LGBM_COLSAMPLE,
     LGBM_RANDOM_STATE,
-    XGB_N_ESTIMATORS,
-    XGB_LEARNING_RATE,
-    XGB_MAX_DEPTH,
-    XGB_SUBSAMPLE,
-    XGB_COLSAMPLE,
-    XGB_RANDOM_STATE,
-    SVM_C,
-    SVM_EPSILON,
+    XGB_N_ESTIMATORS, XGB_LEARNING_RATE, XGB_MAX_DEPTH,
+    XGB_SUBSAMPLE, XGB_COLSAMPLE, XGB_RANDOM_STATE,
+    SVM_C, SVM_EPSILON, SVM_KERNEL, SVM_GAMMA,
 )
 
 from data_loader import make_predefined_splits
@@ -99,6 +93,26 @@ def build_models():
         gain, cover, or split frequency. Like RandomForest and LightGBM,
         it is scale-invariant and does not require StandardScaler.
 
+        SVR (RBF kernel)
+        Support Vector Regression with a radial basis function kernel.
+        Unlike the linear models, RBF SVR learns a non-linear decision
+        boundary by mapping features into a high-dimensional kernel space.
+        This makes it more expressive than Lasso/ElasticNet but means it
+        has NO coef_ attribute — signed coefficients are not available.
+        Feature importance is therefore computed via permutation importance
+        in importance.py: each feature is shuffled in turn and the drop
+        in R² measures how much the model relied on it.
+ 
+        Key hyperparameters:
+          C       : regularisation — higher C = less regularisation,
+                    fits training data more closely (risk of overfitting)
+          epsilon : width of the insensitive tube — predictions within
+                    epsilon of the true value incur no penalty
+          gamma   : "scale" = 1/(n_features * X.var()), controls the
+                    reach of each training example in kernel space
+ 
+        Wrapped in StandardScaler because SVR is sensitive to feature scale.
+
     Returns
     -------
     dict : {model_name: unfitted model}
@@ -154,20 +168,15 @@ def build_models():
             n_jobs=-1
         ),
 
+        # Single SVR entry — RBF kernel, no coef_ available
+        # importance handled via permutation importance in importance.py
         "SVR": Pipeline([
             ("scaler", StandardScaler()),
-            ("model", SVR(
+            ("model",  SVR(
+                kernel=SVM_KERNEL,
                 C=SVM_C,
-                epsilon=SVM_EPSILON
-            ))
-        ]),
-
-        "SVR": Pipeline([
-            ("scaler", StandardScaler()),
-            ("model", LinearSVR(
-                C=1.0,
-                max_iter=10000,
-                random_state=42
+                epsilon=SVM_EPSILON,
+                gamma=SVM_GAMMA,
             ))
         ]),
     }
