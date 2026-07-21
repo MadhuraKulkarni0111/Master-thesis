@@ -21,6 +21,7 @@ from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import r2_score                  
 import lightgbm as lgb
 from xgboost import XGBRegressor
+from sklearn.svm import SVR, LinearSVR
 
 
 from config import (
@@ -36,6 +37,8 @@ from config import (
     XGB_SUBSAMPLE,
     XGB_COLSAMPLE,
     XGB_RANDOM_STATE,
+    SVM_C,
+    SVM_EPSILON,
 )
 
 from data_loader import make_predefined_splits
@@ -150,6 +153,23 @@ def build_models():
             objective="reg:squarederror",
             n_jobs=-1
         ),
+
+        "SVR": Pipeline([
+            ("scaler", StandardScaler()),
+            ("model", SVR(
+                C=SVM_C,
+                epsilon=SVM_EPSILON
+            ))
+        ]),
+
+        "SVR": Pipeline([
+            ("scaler", StandardScaler()),
+            ("model", LinearSVR(
+                C=1.0,
+                max_iter=10000,
+                random_state=42
+            ))
+        ]),
     }
 
 
