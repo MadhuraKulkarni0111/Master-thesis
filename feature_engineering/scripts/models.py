@@ -2,16 +2,16 @@
 models.py
 =========
 Model definitions and cross-validated training.
-
+ 
 Functions
 ---------
 build_models()
     → dict of {model_name: unfitted sklearn-compatible model}
-
+ 
 fit_models(X, y, folds, feature_names, label)
     → dict of {model_name: fitted model}
 """
-
+ 
 import numpy as np
 from sklearn.linear_model import Lasso, ElasticNet
 from sklearn.ensemble import RandomForestRegressor
@@ -21,7 +21,8 @@ from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import r2_score                  
 import lightgbm as lgb
 from xgboost import XGBRegressor
-from sklearn.svm import SVR
+from sklearn.svm import SVR, LinearSVR
+ 
  
 from config import (
     LASSO_ALPHA,
@@ -34,17 +35,17 @@ from config import (
     XGB_SUBSAMPLE, XGB_COLSAMPLE, XGB_RANDOM_STATE,
     SVM_C, SVM_EPSILON, SVM_KERNEL, SVM_GAMMA,
 )
-
+ 
 from data_loader import make_predefined_splits
-
-
+ 
+ 
 def build_models():
     """
     Instantiate all five models with their hyperparameters from config.py.
-
+ 
     Model descriptions
     ------------------
-
+ 
     Lasso
         Linear regression with L1 regularisation. The penalty term is the
         sum of absolute coefficient values multiplied by alpha. L1 drives
@@ -54,14 +55,14 @@ def build_models():
         — without scaling, features measured in large units (e.g. cds_size
         in nucleotides) would be penalised more heavily than unit-less
         frequencies just because of their magnitude.
-
+ 
     ElasticNet
         Combines L1 (Lasso) and L2 (Ridge) penalties. l1_ratio=0.5 means
         equal weighting. The L2 component makes it more stable than pure
         Lasso when features are correlated — which nucleotide frequencies
         always are (if G goes up, at least one of A/T/C must go down).
         Also wrapped in a StandardScaler Pipeline.
-
+ 
     RandomForest
         Ensemble of 300 decision trees, each trained on a bootstrap sample
         of genes and a random subset of sqrt(n_features) ≈ 11 features at
@@ -70,7 +71,7 @@ def build_models():
         decrease in impurity (MDI) — how much each feature reduces the
         variance of TE summed across all splits in all trees. Scale-invariant,
         so no StandardScaler is needed.
-
+ 
     LightGBM
         Gradient-boosted decision trees trained sequentially: each new tree
         corrects the residual errors left by all previous trees. Key
@@ -83,7 +84,7 @@ def build_models():
             count because it weights each use by how much it reduced error.
         subsample=0.8 and colsample_bytree=0.8 add randomness similar to RF's
         bagging, reducing overfitting. Also scale-invariant.
-
+ 
     XGBoost 
         Gradient-boosted decision trees built sequentially to minimize
         prediction error. Unlike LightGBM's leaf-wise growth strategy,
@@ -92,27 +93,7 @@ def build_models():
         built-in regularization and supports feature importance based on
         gain, cover, or split frequency. Like RandomForest and LightGBM,
         it is scale-invariant and does not require StandardScaler.
-
-        SVR (RBF kernel)
-        Support Vector Regression with a radial basis function kernel.
-        Unlike the linear models, RBF SVR learns a non-linear decision
-        boundary by mapping features into a high-dimensional kernel space.
-        This makes it more expressive than Lasso/ElasticNet but means it
-        has NO coef_ attribute — signed coefficients are not available.
-        Feature importance is therefore computed via permutation importance
-        in importance.py: each feature is shuffled in turn and the drop
-        in R² measures how much the model relied on it.
  
-        Key hyperparameters:
-          C       : regularisation — higher C = less regularisation,
-                    fits training data more closely (risk of overfitting)
-          epsilon : width of the insensitive tube — predictions within
-                    epsilon of the true value incur no penalty
-          gamma   : "scale" = 1/(n_features * X.var()), controls the
-                    reach of each training example in kernel space
- 
-        Wrapped in StandardScaler because SVR is sensitive to feature scale.
-
     Returns
     -------
     dict : {model_name: unfitted model}
@@ -126,7 +107,7 @@ def build_models():
                 random_state=42
             ))
         ]),
-
+ 
         "ElasticNet": Pipeline([
             ("scaler", StandardScaler()),
             ("model",  ElasticNet(
@@ -136,14 +117,14 @@ def build_models():
                 random_state=42
             ))
         ]),
-
+ 
         "RandomForest": RandomForestRegressor(
             n_estimators=RF_N_ESTIMATORS,
             max_features=RF_MAX_FEATURES,
             n_jobs=-1,
             random_state=RF_RANDOM_STATE
         ),
-
+ 
         "LightGBM": lgb.LGBMRegressor(
             n_estimators=LGBM_N_ESTIMATORS,
             learning_rate=LGBM_LEARNING_RATE,
@@ -156,7 +137,7 @@ def build_models():
             random_state=LGBM_RANDOM_STATE,
             verbose=-1
         ),
-
+ 
         "XGBoost": XGBRegressor(
             n_estimators=XGB_N_ESTIMATORS,
             learning_rate=XGB_LEARNING_RATE,
@@ -167,21 +148,30 @@ def build_models():
             objective="reg:squarederror",
             n_jobs=-1
         ),
-
-        # Single SVR entry — RBF kernel, no coef_ available
-        # importance handled via permutation importance in importance.py
+ 
+        # RBF SVR — no coef_ available, importance via permutation in importance.py
         "SVR": Pipeline([
             ("scaler", StandardScaler()),
-            ("model",  SVR(
+            ("model", SVR(
                 kernel=SVM_KERNEL,
                 C=SVM_C,
                 epsilon=SVM_EPSILON,
                 gamma=SVM_GAMMA,
             ))
         ]),
+ 
+        "LinearSVM": Pipeline([
+            ("scaler", StandardScaler()),
+            ("model", LinearSVR(
+                C=SVM_C,
+                epsilon=SVM_EPSILON,
+                random_state=42,
+                max_iter=10000
+            ))
+        ]),
     }
-
-
+ 
+ 
 def fit_models(X, y, folds, feature_names, label):
     """
     Cross-validate (out-of-fold) and then fully fit all five models.

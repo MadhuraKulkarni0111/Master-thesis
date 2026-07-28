@@ -21,7 +21,7 @@ from config import RESULTS_DIR, MAX_SAMPLES   # add MAX_SAMPLES to the existing 
 from sequence_features import build_features
 
 
-def load_and_prepare(path, te_col):
+def load_and_prepare(path, te_col, species):
     """
     Load an Excel file and return a feature matrix, target vector,
     fold assignments, and feature names.
@@ -65,7 +65,7 @@ def load_and_prepare(path, te_col):
     # preserve fold assignments before feature engineering changes the index
     folds = df["fold"].values
 
-    X             = build_features(df)
+    X             = build_features(df, species)
     y             = df[te_col].values
     feature_names = X.columns.tolist()
 

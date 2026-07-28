@@ -62,7 +62,7 @@ def plot_top_features(imp_dict, fitted_models, feature_names,
     str : path to the saved PNG
     """
     safe_label = label.replace(" ", "_")
-    fig_path = f"{out_prefix}_{safe_label}_feature_importance_n=100.png"
+    fig_path = f"{out_prefix}_{safe_label}_feature_importance.png"
     #fig_path = f"{out_prefix}_feature_importance_n=100.png"
     n_models  = len(imp_dict)
  
@@ -89,7 +89,7 @@ def plot_top_features(imp_dict, fitted_models, feature_names,
         ax_imp.set_yticks(range(top_n))
         ax_imp.set_yticklabels(top.index[::-1], fontsize=8)
         ax_imp.set_xlabel(
-            "|Coefficient|"              if mname in ("Lasso", "ElasticNet") else
+            "|Coefficient|"              if mname in ("Lasso", "ElasticNet", "LinearSVM") else
             "Gain Importance"            if mname in ("LightGBM", "XGBoost") else
             "Permutation Importance"     if mname == "SVR" else
             "MDI Importance",
@@ -104,7 +104,7 @@ def plot_top_features(imp_dict, fitted_models, feature_names,
         # ── Right panel: signed coefficients or repeated importance ───────
         ax_coef = axes[row_idx, 1]
  
-        if mname in ("Lasso", "ElasticNet"):
+        if mname in ("Lasso", "ElasticNet", "LinearSVM"):
             # retrieve raw signed coefficients from inside the Pipeline
             signed = pd.Series(
                 fitted_models[mname].named_steps["model"].coef_,
@@ -136,7 +136,7 @@ def plot_top_features(imp_dict, fitted_models, feature_names,
                 range(top_n), top.values[::-1],
                 color=color, alpha=0.85, edgecolor="white"
             )
-            if mname in ("LightGBM", "XGBoost"):
+            if mname in ("LightGBM", "XGBoost", "LinearSVM"):
                 xlabel = "Gain Importance"
                 note = "gain-weighted"
             elif mname == "SVR":
@@ -188,7 +188,7 @@ def plot_model_comparison(imp_dict, label, out_prefix, top_n=TOP_N_HEATMAP):
     str : path to the saved PNG
     """
     safe_label = label.replace(" ", "_")
-    fig_path = f"{out_prefix}_{safe_label}_model_comparison_n=100.png"
+    fig_path = f"{out_prefix}_{safe_label}_model_comparison.png"
     #fig_path = f"{out_prefix}_model_comparison.png"
  
     # union of top-N features from every model

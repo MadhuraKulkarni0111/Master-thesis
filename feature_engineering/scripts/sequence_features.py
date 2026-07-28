@@ -25,12 +25,13 @@ import math
 import RNA
 from itertools import product
 
-#from Bio.SeqUtils.CodonUsage import CodonAdaptationIndex
+#from Bio.SeqUtils.CodonUsage import CodonAdaptationIndex 
 
 from config import STOP_CODONS
-from config import CAI_WEIGHTS
 from config import START_WINDOW_UPSTREAM
-from config import  START_WINDOW_DOWNSTREAM 
+from config import START_WINDOW_DOWNSTREAM
+from config import CAI_WEIGHTS_FILE
+_cai_df = pd.read_csv(CAI_WEIGHTS_FILE)
 
 # Pre-compute all 61 sense codons once at import time
 ALL_CODONS = [
@@ -66,26 +67,6 @@ def extract_regions(row):
     return seq[:u5], seq[u5 : u5 + cds], seq[u5 + cds:]
 
 # ── Extracting start codon for MFE calculation ────────────────────────────────────────────────────
-
-def get_start_codon_window(utr5, cds, upstream=30, downstream=30):
-    """
-    Extract a window centered on the start codon.
-
-    The window consists of:
-        - up to `upstream` nucleotides from the end of the 5'UTR
-        - the first `downstream` nucleotides of the CDS
-
-    Returns
-    -------
-    str
-        DNA sequence surrounding the translation start site.
-    """
-
-    left = utr5[-upstream:] if len(utr5) >= upstream else utr5
-    right = cds[:downstream]
-
-    return left + right
-
 
 def get_start_codon_window(utr5, cds, upstream=30, downstream=30):
     """
@@ -157,7 +138,7 @@ def di_freq(seq, label):
         return {f"{label}_{d}": np.nan for d in dinucs} 
     return {f"{label}_{d}": seq.count(d) / n for d in dinucs} # --> normalisation
 
-def kmer_freq(seq, label, k):
+'''def kmer_freq(seq, label, k):
     """
     Relative frequencies of all possible k-mers.
 
@@ -190,7 +171,7 @@ def kmer_freq(seq, label, k):
     return { 
         f"{label}_{kmer}": counts[kmer] / n # ---> normalisation
         for kmer in kmers
-    }
+    }'''
 
 # ── Codon usage ───────────────────────────────────────────────────────────────
 
@@ -271,7 +252,24 @@ def mfe_fold(seq):
 
 # ── Codon Adaption Index (CAI)  ────────────────────────────────────────────────────────
 
-def calculate_cai(cds_seq):
+def load_cai_weights(species: str):   
+     """    Load species-specific CAI weights.   
+
+     Parameters    
+     ----------    
+     species : str        
+     "human" or "mouse"     
+     Returns    
+     
+     -------    
+     dict        
+     Mapping of codon -> relative adaptiveness weight.   
+    """     
+     column = f"cai_weight_{species}"  
+
+     return dict(zip(_cai_df["codon"], _cai_df[column]))
+
+def calculate_cai(cds_seq, weights):
     """
     Calculate Codon Adaptation Index.
     """
@@ -281,8 +279,8 @@ def calculate_cai(cds_seq):
     for i in range(0, len(cds_seq) - 2, 3):
         codon = cds_seq[i:i+3]
 
-        if codon in CAI_WEIGHTS:
-            codons.append(CAI_WEIGHTS[codon])
+        if codon in weights:
+            codons.append(weights[codon])
 
     if len(codons) == 0:
         return np.nan
@@ -335,7 +333,7 @@ def kiss_score(utr5, cds):
 
 # ── Master feature builder ────────────────────────────────────────────────────
 
-def build_features(df):
+def build_features(df, species):
     """
     Engineer all 133 features for every gene in the dataframe.
 
@@ -372,6 +370,7 @@ def build_features(df):
     pd.DataFrame  shape (n_genes, 133)
     """
     records = []
+    weights = load_cai_weights(species)
 
     for _, row in df.iterrows():
         utr5, cds, utr3 = extract_regions(row)
@@ -415,7 +414,7 @@ def build_features(df):
         '''
 
         # CAI with the codon weights
-        feat["cai"] = calculate_cai(cds)
+        feat["cai"] = calculate_cai(cds, weights)
 
         # KISS
         feat["kozak_score"] = kiss_score(utr5, cds)
@@ -433,6 +432,7 @@ def build_features(df):
         feat.update(di_freq(cds,  "cds"))
         feat.update(di_freq(utr3, "utr3"))
 
+        '''
         # k-mer, where k = 4,5,6
         feat.update(kmer_freq(utr5, "utr5", 4))
         feat.update(kmer_freq(cds, "cds", 4))
@@ -442,7 +442,7 @@ def build_features(df):
         feat.update(kmer_freq(utr3, "utr3", 5))
         feat.update(kmer_freq(utr5, "utr5", 6))
         feat.update(kmer_freq(cds, "cds", 6))
-        feat.update(kmer_freq(utr3, "utr3", 6))
+        feat.update(kmer_freq(utr3, "utr3", 6))'''
 
         # codon usage — 61 sense codons from CDS only
         feat.update(codon_freq(cds))

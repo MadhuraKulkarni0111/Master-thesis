@@ -42,14 +42,14 @@ from importance     import get_importances, save_importance_csv
 from visualise      import plot_top_features, plot_model_comparison
  
  
-def run_dataset(path, te_col, label, out_prefix):
+def run_dataset(path, te_col, label, out_prefix, species):
     """Run the full pipeline for a single dataset."""
     print(f"\n{'#'*60}")
     print(f"  Running: {label}")
     print(f"{'#'*60}")
  
     # 1. load and engineer features
-    X, y, folds, feature_names = load_and_prepare(path, te_col)
+    X, y, folds, feature_names = load_and_prepare(path, te_col, species)
  
     # 2. cross-validate and fit all four models
     fitted_models, cv_scores  = fit_models(X, y, folds, feature_names, label)
@@ -58,7 +58,7 @@ def run_dataset(path, te_col, label, out_prefix):
     save_r2_results(cv_scores, label)
  
     # 4. extract importances from fitted models
-    # X and y are passed through for SVR permutation importance
+    # X and y are passed for SVR permutation importance (no-op for other models)
     importances = get_importances(fitted_models, feature_names, X, y)
  
     # 5. visualise
@@ -78,10 +78,11 @@ def run_dataset(path, te_col, label, out_prefix):
  
  
 def main():
-    for path, te_col, label, out_prefix in DATASETS:
-        run_dataset(path, te_col, label, out_prefix)
+    for path, te_col, label, out_prefix, species in DATASETS:
+        run_dataset(path, te_col, label, out_prefix, species)
     print("\n\nAll datasets complete.")
  
  
 if __name__ == "__main__":
     main()
+ 
