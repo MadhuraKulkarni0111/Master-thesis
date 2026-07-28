@@ -8,7 +8,9 @@ All files and folders currently being used can be found inside the folder labell
 .
 ├── requirements.txt
 ├── data/
-│   ├── input/
+│   ├── human_translation_efficiency_data.xlsx
+|   ├── mouse_translation_efficiency_data.xlsx
+|   └── combined_cai_weights.csv
 ├── scripts/
 │   ├── config.py
 │   ├── sequence_features.py
@@ -17,6 +19,7 @@ All files and folders currently being used can be found inside the folder labell
 │   ├── importance.py
 │   ├── visualise.py
 │   ├── run_pipeline.py
+|   |── build_cai_weights.py
 │   └── model_results.py
 └── results/
 ```
@@ -79,6 +82,12 @@ Run the complete workflow with:
 ```bash
 python scripts/run_pipeline.py
 ```
+Generat the csv file for weights with:
+
+```bash
+python scripts/build_cai_weights.py
+```
+Running the script build_cai_weights.py will generate a csv file in the folder data which acts as an input for cai calculation in the main pipeline.
 ---
 
 ## Module Responsibilities
@@ -91,17 +100,25 @@ python scripts/run_pipeline.py
 | `models.py`            | Model definitions, training, and cross-validation                        |
 | `importance.py`        | Feature importance extraction and export                                 |
 | `visualise.py`         | All plots and visual outputs                                             |
-| `model_results.py`     | outputs coefficient and cv results into a csv file                                          |
+| `model_results.py`     | Outputs coefficient and cv results into a csv file                       |
+| `build_cai_weights.py` | Creats a csv with wweights for calcualtion of codon adaption index       |
 
 ---
 
 ## Output
+
+After running the build_cai_weights, you will get:
+
+* csv files for weights of humna and mouse datset
+* NCBI dodnloaded database for the assembled genome
+* combined csv file with both information of human and mouse weights (used as in input for cai calculation)
 
 After running the pipeline, you will get:
 
 * Trained model results (cross-validation performance)
 * Feature importance CSV files
 * Visualisations (plots and heatmaps)
+
 
 
 
