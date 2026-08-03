@@ -31,7 +31,9 @@ from config import STOP_CODONS
 from config import START_WINDOW_UPSTREAM
 from config import START_WINDOW_DOWNSTREAM
 from config import CAI_WEIGHTS_FILE
+from config import TAI_WEIGHTS_FILE
 _cai_df = pd.read_csv(CAI_WEIGHTS_FILE)
+_tai_df = pd.read_csv(TAI_WEIGHTS_FILE)
 
 # Pre-compute all 61 sense codons once at import time
 ALL_CODONS = [
@@ -253,16 +255,16 @@ def mfe_fold(seq):
 # ── Codon Adaption Index (CAI)  ────────────────────────────────────────────────────────
 
 def load_cai_weights(species: str):   
-     """    Load species-specific CAI weights.   
+     """    
+     Load species-specific CAI weights.   
 
      Parameters    
      ----------    
-     species : str        
-     "human" or "mouse"     
+     species : str "human" or "mouse"  
+
      Returns    
-     
      -------    
-     dict        
+     dict 
      Mapping of codon -> relative adaptiveness weight.   
     """     
      column = f"cai_weight_{species}"  
@@ -288,6 +290,25 @@ def calculate_cai(cds_seq, weights):
     return math.exp(
         sum(math.log(w) for w in codons) / len(codons)
     )
+
+# ── tRNA Adaption Index (TAI)  ────────────────────────────────────────────────────────
+
+def load_tai_weights(species: str):
+    column = f"tai_weight_{species}"
+    return dict(zip(_tai_df["codon"], _tai_df[column]))
+
+def calculate_tai(cds_seq, weights):
+    codons = [cds_seq[i:i+3] for i in range(0, len(cds_seq)-2, 3)]
+    vals = []
+    for c in codons:
+        if c == "ATG" or c in STOP_CODONS:
+            continue
+        w = weights.get(c)
+        if w and w > 0:
+            vals.append(w)
+    if not vals:
+        return np.nan
+    return math.exp(sum(math.log(w) for w in vals) / len(vals))
 
 # ── Kozak Index Sequence Score (KISS)  ────────────────────────────────────────────────────────
 
@@ -371,6 +392,7 @@ def build_features(df, species):
     """
     records = []
     weights = load_cai_weights(species)
+    tai_weights = load_tai_weights(species)
 
     for _, row in df.iterrows():
         utr5, cds, utr3 = extract_regions(row)
@@ -415,6 +437,9 @@ def build_features(df, species):
 
         # CAI with the codon weights
         feat["cai"] = calculate_cai(cds, weights)
+
+        # TAI with the codon weights
+        feat["tai"] = calculate_tai(cds, tai_weights)
 
         # KISS
         feat["kozak_score"] = kiss_score(utr5, cds)

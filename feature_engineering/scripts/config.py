@@ -75,6 +75,7 @@ MODEL_COLORS = {
     "LightGBM":     "#B07AA1",   # purple
     "XGBoost":      "#E15759", # red
     "LinearSVM" :   "#1B9E77", # teal
+    "SVR":          "#76B7B2",   # light teal s
 }
  
  
@@ -143,6 +144,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
  
 CAI_WEIGHTS_FILE = DATA_DIR / "combined_cai_weights.csv"
+TAI_WEIGHTS_FILE = DATA_DIR / "combined_tai_weights.csv"
  
 # ------ config settings for the window size for MFE calculation ------------------
  
