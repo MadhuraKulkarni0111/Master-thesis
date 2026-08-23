@@ -1,6 +1,8 @@
 # Sequence Analysis Pipeline
 
-All files and folders currently being used can be found inside the folder labelled feature_engineering in the "main" branch. Another branch named separate_functions is available on which work pertaining embeddings will be followed before merging them into the main branch again. 
+All files and folders currently being used can be found in the "main" branch. Another branch named separate_functions is available on which work pertaining embeddings will be followed before merging them into the main branch again. 
+
+The master_thesis branch consists of some initial code writting and can be ignored for now, git will be cleaned and updated (branched will be renamed) over the week making it easier to navigate. 
 
 ## Repository Structure
 
