@@ -1,6 +1,6 @@
 # Sequence Analysis Pipeline
 
-All files and folders currently being used can be found inside the folder labelled feature_engineering in branch separate_functions 
+All files and folders currently being used can be found inside the folder labelled feature_engineering in the "main" branch. Another branch named separate_functions is available on which work pertaining embeddings will be followed before merging them into the main branch again. 
 
 ## Repository Structure
 
@@ -10,6 +10,7 @@ All files and folders currently being used can be found inside the folder labell
 ├── data/
 │   ├── human_translation_efficiency_data.xlsx
 |   ├── mouse_translation_efficiency_data.xlsx
+|   ├── combined_tai_weights.csv
 |   └── combined_cai_weights.csv
 ├── scripts/
 │   ├── config.py
@@ -18,9 +19,12 @@ All files and folders currently being used can be found inside the folder labell
 │   ├── models.py
 │   ├── importance.py
 │   ├── visualise.py
+│   ├── model_results.py
 │   ├── run_pipeline.py
-|   |── build_cai_weights.py
-│   └── model_results.py
+|   |── build_cai_weights.py ----\
+|   |── build_tai_weights.py ----- > scripts for genrating the weights for the calculation of tai and cai
+|   └──common_weights.py -------/
+├── requirements.yaml
 └── results/
 ```
 ---
@@ -69,25 +73,31 @@ Data → Feature Engineering → Model Training → Evaluation → Visualisation
 
 ## Installation
 
-Create a Python environment and install dependencies:
+A .yaml file is avaialbel with all of the dependencies required to run the entire pipeline to create the environment 
+use the below comman:
 
 ```bash
-pip install -r requirements.txt
+conda activate master-thesis
 ```
 
 ## Running the Pipeline
 
+To run the pipline it is first required to run the scripts build_cai_weights.py and build_tai_weights.py
+for the mouse and human data which serveds as an input for further feature importance calculation. 
+
 Run the complete workflow with:
+
+```bash
+python scripts/build_cai_weights.py
+python scripts/build_tai_weights.py
+```
+Running the script build_cai_weights.py and build_tai_weights.py will generate a csv file in the folder data which acts as an input for cai and tai calculation in the main pipeline (utilised in scripts/sequwnce_features).
+
+Then run the main script for training the supervised models: 
 
 ```bash
 python scripts/run_pipeline.py
 ```
-Generat the csv file for weights with:
-
-```bash
-python scripts/build_cai_weights.py
-```
-Running the script build_cai_weights.py will generate a csv file in the folder data which acts as an input for cai calculation in the main pipeline.
 ---
 
 ## Module Responsibilities
@@ -102,16 +112,21 @@ Running the script build_cai_weights.py will generate a csv file in the folder d
 | `visualise.py`         | All plots and visual outputs                                             |
 | `model_results.py`     | Outputs coefficient and cv results into a csv file                       |
 | `build_cai_weights.py` | Creats a csv with wweights for calcualtion of codon adaption index       |
+| `build_tai_weights.py` | Creats a csv with wweights for calcualtion of tRNA adaption index       |
 
 ---
 
 ## Output
 
-After running the build_cai_weights, you will get:
+After running the build_cai_weights and build_tai_weights, you will get:
 
 * csv files for weights of humna and mouse datset
 * NCBI dodnloaded database for the assembled genome
 * combined csv file with both information of human and mouse weights (used as in input for cai calculation)
+
+After running the build_tai_weights, you will get:
+
+* combined csv file with both information of human and mouse weights (used as in input for tai calculation)
 
 After running the pipeline, you will get:
 
