@@ -1,0 +1,41 @@
+# Python cache / compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# macOS
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE / editor files
+.vscode/
+.idea/
+
+# Python test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+
+# Large generated/reference data
+data/human/ncbi_dataset/
+data/mouse/ncbi_dataset/
+data/human/GCF_*.zip
+data/mouse/GCF_*.zip
+data/human/cai_scores.csv
+data/mouse/cai_scores.csv
+data/combined_cai_scores.csv
