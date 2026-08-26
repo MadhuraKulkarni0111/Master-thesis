@@ -70,7 +70,7 @@ def load_and_prepare(path, te_col, species):
     feature_names = X.columns.tolist()
 
     # median imputation — fills NaN with the median of each feature column
-    imputer = SimpleImputer(strategy="median")
+    imputer = SimpleImputer(strategy="constant", fill_value=0)
     X_arr   = imputer.fit_transform(X)
 
     print(f"  Feature matrix shape: {X_arr.shape}")

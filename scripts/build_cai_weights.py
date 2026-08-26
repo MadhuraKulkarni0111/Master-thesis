@@ -8,6 +8,10 @@ for human and mouse CDS.
 CAI weights are calculated from ribosomal protein genes using
 RSCU and the Sharp & Li (1987) method.
 
+Our TE dataset consists of mRNAs encoded by nuclear DNA, therefore to 
+derive CAI codon preferences from nuclear-encoded, highly expressed genes we
+used nuclear ribosomal protein genes as the reference set.
+
 The script downloads CDS data from NCBI, calculates CAI weights,
 scores valid CDS, and generates combined human/mouse tables.
 
@@ -173,20 +177,6 @@ def compute_cai_weights(rscu, fam):
     return weights
 
 
-def compute_cai(seq: str, weights: dict):
-    codons = [seq[i:i + 3] for i in range(0, len(seq) - 3, 3)]
-    log_sum, n = 0.0, 0
-    for c in codons:
-        aa = CODON_TABLE.get(c)
-        if aa is None or aa == '*':
-            continue
-        w = weights.get(c)
-        if w and w > 0:
-            log_sum += math.log(w)
-            n += 1
-    return math.exp(log_sum / n) if n else None
-
-
 # --------------------------------------------------------------------------
 # Output writers (per-species)
 # --------------------------------------------------------------------------
@@ -216,15 +206,6 @@ def write_weights(weights, fam, csv_path):
             w.writerow([codon, codon_to_aa[codon], round(weights[codon], 4)])
 
 
-def write_genome_scores(all_valid, weights, outpath):
-    with open(outpath, "w", newline="") as fh:
-        w = csv.writer(fh)
-        w.writerow(["gene", "header", "length_nt", "cai"])
-        for gene, header, seq in all_valid:
-            cai = compute_cai(seq, weights)
-            w.writerow([gene or "", header, len(seq), "" if cai is None else round(cai, 4)])
-
-
 # --------------------------------------------------------------------------
 # Per-species runner
 # --------------------------------------------------------------------------
@@ -248,11 +229,9 @@ def run_species(species: str, accession: str, base_outdir: str, gene_regex: re.P
     write_reference_gene_table(ref_records, os.path.join(outdir, "reference_genes.tsv"))
     write_rscu_table(counts, rscu, fam, os.path.join(outdir, "rscu_table.csv"))
     write_weights(weights, fam,os.path.join(outdir, "cai_weights.csv"))
-    write_genome_scores(all_valid, weights, os.path.join(outdir, "cai_scores.csv"))
 
     print(f"  [done] reference genes used: {len(ref_records)} | CDS scored: {len(all_valid)}")
-    print(f"  [done] wrote reference_genes.tsv, rscu_table.csv, cai_weights.csv, "
-          f"cai_scores.csv -> {outdir}/")
+    print(f"  [done] wrote reference_genes.tsv, rscu_table.csv, cai_weights.csv -> {outdir}/")
     return outdir, fam
 
 
@@ -283,20 +262,6 @@ def merge_weights(species_outdirs: dict, base_outdir: str):
     return out_path
 
 
-def merge_scores(species_outdirs: dict, base_outdir: str):
-    out_path = os.path.join(base_outdir, "combined_cai_scores.csv")
-    with open(out_path, "w", newline="") as out_fh:
-        w = csv.writer(out_fh)
-        w.writerow(["species", "gene", "header", "length_nt", "cai"])
-        for species, outdir in species_outdirs.items():
-            with open(os.path.join(outdir, "cai_scores.csv")) as fh:
-                reader = csv.DictReader(fh)
-                for row in reader:
-                    w.writerow([species, row["gene"], row["header"], row["length_nt"], row["cai"]])
-    print(f"[merge] wrote {out_path}")
-    return out_path
-
-
 # --------------------------------------------------------------------------
 # Main
 # --------------------------------------------------------------------------
@@ -313,7 +278,6 @@ def main():
         species_outdirs[species] = species_dir
 
     merge_weights(species_outdirs, outdir)
-    merge_scores(species_outdirs, outdir)
 
     print(f"\nDone. All outputs saved under: {outdir}/")
     print("  human/ , mouse/                 -> per-species intermediate files")

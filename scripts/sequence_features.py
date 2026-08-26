@@ -102,7 +102,7 @@ def gc_content(seq):
     Returns np.nan for empty sequences (e.g. genes with no annotated UTR).
     """
     if not seq:
-        return np.nan
+        return np.zero
     return (seq.count("G") + seq.count("C")) / len(seq)
 
 def mono_freq(seq, label):
@@ -120,7 +120,7 @@ def mono_freq(seq, label):
     """
     n = len(seq)
     if n == 0:
-        return {f"{label}_{nt}": np.nan for nt in "ATGC"}
+        return {f"{label}_{nt}": np.zero for nt in "ATGC"}
     return {f"{label}_{nt}": seq.count(nt) / n for nt in "ATGC"}
 
 def di_freq(seq, label):
@@ -137,43 +137,9 @@ def di_freq(seq, label):
     dinucs = [a + b for a, b in product("ATGC", repeat=2)]
     n = len(seq) - 1
     if n <= 0:
-        return {f"{label}_{d}": np.nan for d in dinucs} 
+        return {f"{label}_{d}": np.zero for d in dinucs} 
     return {f"{label}_{d}": seq.count(d) / n for d in dinucs} # --> normalisation
 
-'''def kmer_freq(seq, label, k):
-    """
-    Relative frequencies of all possible k-mers.
-
-    Parameters
-    ----------
-    seq : str
-    label : str
-    k : int
-
-    Returns
-    -------
-    dict
-        {label_AAAA : frequency, ...}
-    """
-
-    kmers = ["".join(p) for p in product("ATGC", repeat=k)] # producte runs combinations and join converts ["X", "Y"] into [X,Y]
-    n = len(seq) - k + 1
-
-    if n <= 0:
-        return {f"{label}_{kmer}": np.nan for kmer in kmers}
-
-    counts = {kmer: 0 for kmer in kmers}
-
-    for i in range(n):
-        kmer = seq[i:i+k]
-
-        if "N" not in kmer: # counts the total frequency of each k-mer
-            counts[kmer] += 1
-
-    return { 
-        f"{label}_{kmer}": counts[kmer] / n # ---> normalisation
-        for kmer in kmers
-    }'''
 
 # ── Codon usage ───────────────────────────────────────────────────────────────
 
@@ -241,7 +207,7 @@ def mfe_fold(seq):
         Returns np.nan for empty sequences.
     """
     if not seq:
-        return np.nan
+        return np.zero
 
     seq = seq.replace("T", "U")
 
@@ -370,15 +336,12 @@ def build_features(df, species):
     uAUG count                :     1
     Mononucleotide frequencies:     12  (4 nt × 3 regions)
     Dinucleotide frequencies  :     48  (16 dinucs × 3 regions)
-    4-mer frequencies         :    768  (256 dinucs × 3 regions)
-    5-mer frequencies         :   3072  (1024 dinucs × 3 regions)
-    6-mer frequencies         :  12288  (4069  dinucs × 3 regions)
     Codon usage               :     61  (61 sense codons, CDS only)
     RNA structure (MFE)       :     1   (only around the start codon)
     CAI                       :     1   (codon adpation index scores)
-    Kozak (KISS)              :     1   (Kozak index seqience scores)
+    TAI                       :     1   (tRNA adpation index scores)
     ─────────────────────────────────
-    Total                     :  5200
+    Total                     :   132
 
     Parameters
     ----------
@@ -404,7 +367,7 @@ def build_features(df, species):
         # so long genes don't dominate linear model coefficients
         # feat["cds_size"]  = len(cds)
         # feat["utr3_size"] = len(utr3)
-        # feat["log_utr5"]  = np.log1p(len(utr5))
+        feat["log_utr5"]  = np.log1p(len(utr5))
         feat["log_cds"]   = np.log1p(len(cds))
         feat["log_utr3"]  = np.log1p(len(utr3))
         feat["log_tx"]    = np.log1p(len(full))
@@ -416,8 +379,6 @@ def build_features(df, species):
         feat["gc_full"] = gc_content(full)
 
         # MFE from rna vienna 
-        start_window = get_start_codon_window(utr5, cds)
-
         start_window = get_start_codon_window(
             utr5,
             cds,
@@ -457,6 +418,10 @@ def build_features(df, species):
         feat.update(di_freq(cds,  "cds"))
         feat.update(di_freq(utr3, "utr3"))
 
+        feat.update(codon_freq(utr5, "utr5"))
+        feat.update(codon_freq(cds,  "cds"))
+        feat.update(codon_freq(utr3, "utr3"))
+
         '''
         # k-mer, where k = 4,5,6
         feat.update(kmer_freq(utr5, "utr5", 4))
@@ -470,7 +435,7 @@ def build_features(df, species):
         feat.update(kmer_freq(utr3, "utr3", 6))'''
 
         # codon usage — 61 sense codons from CDS only
-        feat.update(codon_freq(cds))
+        #feat.update(codon_freq(cds))
 
         records.append(feat)
 
