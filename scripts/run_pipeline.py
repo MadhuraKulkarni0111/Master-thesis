@@ -52,7 +52,7 @@ def run_dataset(path, te_col, label, out_prefix, species):
     X, y, folds, feature_names = load_and_prepare(path, te_col, species)
  
     # 2. cross-validate and fit all four models
-    fitted_models, cv_scores  = fit_models(X, y, folds, feature_names, label)
+    fitted_models, cv_scores  = fit_models(X, y, folds, label)
  
      # 3. export R^2 results to the results folder
     save_r2_results(cv_scores, label)

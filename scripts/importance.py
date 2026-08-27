@@ -66,8 +66,8 @@ def get_importances(fitted_models, feature_names, X=None, y=None):
     # RBF SVR is evaluated only using OOF R².
     # Feature importance is intentionally omitted because
     # permutation importance is computationally expensive.
-    print("Skipping permutation impirtance calculation for SVR becuase it is computationally complex ")
-    '''if "SVR" in fitted_models:
+    # print("Skipping permutation impirtance calculation for SVR becuase it is computationally complex ")
+    if "SVR" in fitted_models:
         if X is None or y is None:
             raise ValueError(
                 "X and y must be passed to get_importances() "
@@ -85,7 +85,7 @@ def get_importances(fitted_models, feature_names, X=None, y=None):
         imp["SVR"] = pd.Series(
             np.clip(perm.importances_mean, 0, None),
             index=feature_names
-        )'''
+        )
  
     return imp
  

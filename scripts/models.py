@@ -8,7 +8,7 @@ Functions
 build_models()
     → dict of {model_name: unfitted sklearn-compatible model}
  
-fit_models(X, y, folds, feature_names, label)
+fit_models(X, y, folds, label)
     → dict of {model_name: fitted model}
 """
  
@@ -172,7 +172,7 @@ def build_models():
     }
  
  
-def fit_models(X, y, folds, feature_names, label):
+def fit_models(X, y, folds, label):
     """
     Cross-validate (out-of-fold) and then fully fit all five models.
  
@@ -198,7 +198,6 @@ def fit_models(X, y, folds, feature_names, label):
     X            : np.ndarray  shape (n_genes, n_features)
     y            : np.ndarray  shape (n_genes,)
     folds        : np.ndarray  shape (n_genes,)  — fold assignments
-    feature_names: list of str
     label        : str  — dataset name for display
  
     Returns

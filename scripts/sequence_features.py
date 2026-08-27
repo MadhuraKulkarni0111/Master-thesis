@@ -102,7 +102,7 @@ def gc_content(seq):
     Returns np.nan for empty sequences (e.g. genes with no annotated UTR).
     """
     if not seq:
-        return np.zero
+        return np.nan
     return (seq.count("G") + seq.count("C")) / len(seq)
 
 def mono_freq(seq, label):
@@ -120,7 +120,7 @@ def mono_freq(seq, label):
     """
     n = len(seq)
     if n == 0:
-        return {f"{label}_{nt}": np.zero for nt in "ATGC"}
+        return {f"{label}_{nt}": np.nan for nt in "ATGC"}
     return {f"{label}_{nt}": seq.count(nt) / n for nt in "ATGC"}
 
 def di_freq(seq, label):
@@ -137,8 +137,26 @@ def di_freq(seq, label):
     dinucs = [a + b for a, b in product("ATGC", repeat=2)]
     n = len(seq) - 1
     if n <= 0:
-        return {f"{label}_{d}": np.zero for d in dinucs} 
+        return {f"{label}_{d}": np.nan for d in dinucs} 
     return {f"{label}_{d}": seq.count(d) / n for d in dinucs} # --> normalisation
+
+
+def kmer_freq(seq, label, k):
+    """
+    Fraction of each possible k-mer in a region (overlapping windows).
+
+    Counts overlapping k-length windows: for a sequence of length N there
+    are N-k+1 windows. Unlike codon_freq, this is not frame-locked and is
+    not restricted to the CDS.
+
+    Returns a dict with 4**k keys: label_AAA...A, ..., label_TTT...T
+    Returns np.nan for all keys if the region is shorter than k.
+    """
+    kmers = ["".join(p) for p in product("ATGC", repeat=k)]
+    n = len(seq) - k + 1
+    if n <= 0:
+        return {f"{label}_{kmer}": np.nan for kmer in kmers}
+    return {f"{label}_{kmer}": seq.count(kmer) / n for kmer in kmers}
 
 
 # ── Codon usage ───────────────────────────────────────────────────────────────
@@ -207,7 +225,7 @@ def mfe_fold(seq):
         Returns np.nan for empty sequences.
     """
     if not seq:
-        return np.zero
+        return np.nan
 
     seq = seq.replace("T", "U")
 
@@ -337,11 +355,12 @@ def build_features(df, species):
     Mononucleotide frequencies:     12  (4 nt × 3 regions)
     Dinucleotide frequencies  :     48  (16 dinucs × 3 regions)
     Codon usage               :     61  (61 sense codons, CDS only)
+    3-mer frequencies         :     192 (64 trimers × 3 regions)
     RNA structure (MFE)       :     1   (only around the start codon)
     CAI                       :     1   (codon adpation index scores)
     TAI                       :     1   (tRNA adpation index scores)
     ─────────────────────────────────
-    Total                     :   132
+    Total                     :   324
 
     Parameters
     ----------
@@ -418,24 +437,12 @@ def build_features(df, species):
         feat.update(di_freq(cds,  "cds"))
         feat.update(di_freq(utr3, "utr3"))
 
-        feat.update(codon_freq(utr5, "utr5"))
-        feat.update(codon_freq(cds,  "cds"))
-        feat.update(codon_freq(utr3, "utr3"))
+        feat.update(codon_freq(cds))
 
-        '''
-        # k-mer, where k = 4,5,6
-        feat.update(kmer_freq(utr5, "utr5", 4))
-        feat.update(kmer_freq(cds, "cds", 4))
-        feat.update(kmer_freq(utr3, "utr3", 4))
-        feat.update(kmer_freq(utr5, "utr5", 5))
-        feat.update(kmer_freq(cds, "cds", 5))
-        feat.update(kmer_freq(utr3, "utr3", 5))
-        feat.update(kmer_freq(utr5, "utr5", 6))
-        feat.update(kmer_freq(cds, "cds", 6))
-        feat.update(kmer_freq(utr3, "utr3", 6))'''
-
-        # codon usage — 61 sense codons from CDS only
-        #feat.update(codon_freq(cds))
+        # k-mer frequencies, k = 3 only — 64 trimers × 3 regions = 192
+        feat.update(kmer_freq(utr5, "utr5", 3))
+        feat.update(kmer_freq(cds,  "cds",  3))
+        feat.update(kmer_freq(utr3, "utr3", 3))
 
         records.append(feat)
 
