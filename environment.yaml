@@ -1,0 +1,14 @@
+name: master-thesis
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pandas
+  - numpy
+  - scikit-learn
+  - matplotlib
+  - lightgbm
+  - xgboost
+  
