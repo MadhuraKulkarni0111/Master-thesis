@@ -21,6 +21,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
+import os 
  
 from config import MODEL_COLORS, TOP_N_BAR, TOP_N_HEATMAP
  
