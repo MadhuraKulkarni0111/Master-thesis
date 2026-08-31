@@ -19,15 +19,31 @@ This is the ONLY file we will need to edit when:
 #   output_prefix: path prefix for all output files produced for this dataset
 #                  (PNGs and CSVs will be saved as <output_prefix>_*.png / *.csv)
  
-'''
 from pathlib import Path
+import os
  
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR    = Path(__file__).resolve().parent.parent
+DATA_DIR    = BASE_DIR / "data"
+RESULTS_DIR = BASE_DIR / "results"
  
-DATA_DIR = BASE_DIR / "data"
-RESULT_DIR = BASE_DIR / "results"
+DATASETS = [
+    (
+        str(DATA_DIR / "Human_data.xlsx"),
+        "TE_HCT116",
+        "Human_HCT116",
+        str(RESULTS_DIR) + os.sep,
+        "human"
+    ),
+    (
+        str(DATA_DIR / "Mouse_data.xlsx"),
+        "TE_4T1",
+        "Mouse_4T1",
+        str(RESULTS_DIR) + os.sep,
+        "mouse"
+    ),
+]
+
 '''
- 
 DATASETS = [
     (
         "/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/data/Human_data.xlsx",
@@ -44,7 +60,8 @@ DATASETS = [
         "mouse"
     ),
 ]
- 
+'''
+
 # ── Sampling settings ─────────────────────────────────────────────────────────
 # Set to an integer to run on a subset of sequences (useful for quick testing).
 # Set to None to run on the full dataset.
