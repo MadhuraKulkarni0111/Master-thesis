@@ -14,6 +14,7 @@ save_importance_csv(imp_dict, fitted_models, feature_names, label, out_prefix)
  
 import numpy as np
 import pandas as pd
+import os
 from sklearn.inspection import permutation_importance
  
 from config import TOP_N_CSV
@@ -98,6 +99,7 @@ def save_importance_csv(imp_dict, fitted_models, feature_names,
     """
     safe_label = label.replace(" ", "_")
     csv_path   = f"{out_prefix}_{safe_label}_top_features.csv"
+    os.makedirs(os.path.dirname(csv_path) or ".", exist_ok=True)
     rows       = []
  
     for mname, imp in imp_dict.items():

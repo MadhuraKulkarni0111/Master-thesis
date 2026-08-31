@@ -54,7 +54,7 @@ def save_r2_results(cv_scores, label):
     -------
     str : path to the saved CSV file
     """
-    #os.makedirs(RESULTS_DIR, exist_ok=True)
+    os.makedirs(RESULTS_DIR, exist_ok=True)
  
     rows = []
     for model_name, result in cv_scores.items():

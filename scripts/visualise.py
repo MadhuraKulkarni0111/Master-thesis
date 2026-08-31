@@ -14,7 +14,6 @@ plot_model_comparison(imp_dict, label, out_prefix, top_n)
     Heatmap comparing top features across all models side by side.
     Saved as <out_prefix>_model_comparison.png
 """
-print("visualising)")
  
 import numpy as np
 import pandas as pd
@@ -22,7 +21,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
-import shap
  
 from config import MODEL_COLORS, TOP_N_BAR, TOP_N_HEATMAP
  
@@ -64,6 +62,7 @@ def plot_top_features(imp_dict, fitted_models, feature_names,
     safe_label = label.replace(" ", "_")
     fig_path = f"{out_prefix}_{safe_label}_feature_importance.png"
     #fig_path = f"{out_prefix}_feature_importance_n=100.png"
+    os.makedirs(os.path.dirname(fig_path) or ".", exist_ok=True)
     n_models  = len(imp_dict)
  
     fig, axes = plt.subplots(
