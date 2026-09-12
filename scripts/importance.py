@@ -2,72 +2,68 @@
 importance.py
 =============
 Extract feature importances and signed coefficients from fitted models.
- 
+
 Functions
 ---------
-get_importances(fitted_models, feature_names)
+get_importances(fitted_models, feature_names, X, y)
     → dict of {model_name: pd.Series(importance, index=feature_names)}
- 
-save_importance_csv(imp_dict, fitted_models, feature_names, label, out_prefix)
-    → str  (path to saved CSV)
+
+save_importance_csv(imp_dict, fitted_models, feature_names, label, out_dir)
+    → str  (path to saved CSV, written into out_dir)
 """
- 
+
+import os
+
 import numpy as np
 import pandas as pd
-import os
 from sklearn.inspection import permutation_importance
- 
+
 from config import TOP_N_CSV
- 
+
 # Models whose importance is |coefficient| from a Pipeline
 LINEAR_MODELS = ("Lasso", "ElasticNet", "LinearSVM")
- 
-# Models with no coef_ — importance via permutation
-#PERMUTATION_MODELS = ("SVR")
- 
- 
+
+
 def get_importances(fitted_models, feature_names, X=None, y=None):
     """
     Extract a feature importance score for every feature from each model.
- 
+
     Lasso / ElasticNet / LinearSVM : |coefficient| from Pipeline
     RandomForest                    : MDI (mean decrease in impurity)
-    LightGBM / XGBoost             : total gain across all splits
+    LightGBM / XGBoost              : total gain across all splits
     SVR (RBF)                       : permutation importance — mean R² drop
                                       when each feature is shuffled.
                                       X and y must be provided for this.
     """
     imp = {}
- 
+
     # ── Linear models: |coefficient| ─────────────────────────────────────
     for mname in LINEAR_MODELS:
         if mname in fitted_models:
             coef = fitted_models[mname].named_steps["model"].coef_
-            # LinearSVR.coef_ is shape (1, n_features) — flatten if needed
             imp[mname] = pd.Series(
                 np.abs(coef.ravel()),
                 index=feature_names
-                )
- 
+            )
+
     # ── Tree models ───────────────────────────────────────────────────────
-    imp["RandomForest"] = pd.Series(
-        fitted_models["RandomForest"].feature_importances_,
-        index=feature_names
-    )
-    imp["LightGBM"] = pd.Series(
-        fitted_models["LightGBM"].feature_importances_,
-        index=feature_names
-    )
-    imp["XGBoost"] = pd.Series(
-        fitted_models["XGBoost"].feature_importances_,
-        index=feature_names
-    )
- 
+    if "RandomForest" in fitted_models:
+        imp["RandomForest"] = pd.Series(
+            fitted_models["RandomForest"].feature_importances_,
+            index=feature_names
+        )
+    if "LightGBM" in fitted_models:
+        imp["LightGBM"] = pd.Series(
+            fitted_models["LightGBM"].feature_importances_,
+            index=feature_names
+        )
+    if "XGBoost" in fitted_models:
+        imp["XGBoost"] = pd.Series(
+            fitted_models["XGBoost"].feature_importances_,
+            index=feature_names
+        )
+
     # ── SVR (RBF): permutation importance ────────────────────────────────
-    # RBF SVR is evaluated only using OOF R².
-    # Feature importance is intentionally omitted because
-    # permutation importance is computationally expensive.
-    # print("Skipping permutation impirtance calculation for SVR becuase it is computationally complex ")
     if "SVR" in fitted_models:
         if X is None or y is None:
             raise ValueError(
@@ -87,21 +83,23 @@ def get_importances(fitted_models, feature_names, X=None, y=None):
             np.clip(perm.importances_mean, 0, None),
             index=feature_names
         )
- 
+
     return imp
- 
+
+
 def save_importance_csv(imp_dict, fitted_models, feature_names,
-                        label, out_prefix):
+                        label, out_dir):
     """
-    Save the top-N features per model to a CSV file.
+    Save the top-N features per model to a CSV file inside out_dir.
+
     signed_coef is populated for linear models only (Lasso, ElasticNet,
     LinearSVM). Tree models and RBF SVR get np.nan in that column.
     """
+    os.makedirs(out_dir, exist_ok=True)
     safe_label = label.replace(" ", "_")
-    csv_path   = f"{out_prefix}_{safe_label}_top_features.csv"
-    os.makedirs(os.path.dirname(csv_path) or ".", exist_ok=True)
+    csv_path   = os.path.join(out_dir, f"{safe_label}_top_features.csv")
     rows       = []
- 
+
     for mname, imp in imp_dict.items():
         for feat, val in imp.nlargest(TOP_N_CSV).items():
             signed = np.nan
@@ -115,7 +113,7 @@ def save_importance_csv(imp_dict, fitted_models, feature_names,
                 "importance":  val,
                 "signed_coef": signed,
             })
- 
+
     pd.DataFrame(rows).to_csv(csv_path, index=False)
     print(f"  Saved: {csv_path}")
     return csv_path
