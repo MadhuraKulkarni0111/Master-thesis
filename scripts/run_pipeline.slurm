@@ -1,20 +1,22 @@
 #!/bin/bash
-
-#SBATCH --job-name=te_pipeline
-#SBATCH --array=0-25
+#SBATCH --job-name=te_pipeline_full
 #SBATCH --cpus-per-task=16
+#SBATCH --mem=64G
 #SBATCH --time=24:00:00
-#SBATCH --output=logs_eval/te_pipeline_%A_%a.out
-#SBATCH --error=logs_eval/te_pipeline_%A_%a.err
+#SBATCH --output=logs/te_pipeline_full_%j.out
+#SBATCH --error=logs/te_pipeline_full_%j.err
 
 echo "Job started: $(date)"
-echo "Array task ID: $SLURM_ARRAY_TASK_ID"
+echo "Node: $(hostname)"
 
-# ── environment ──────────────────────────────────────────────────────────
+# -- directories -----------------------------------------------------------
+mkdir -p logs
+
+# -- environment -------------------------------------------------------------
 source /home/mkulkar/software/miniforge3/etc/profile.d/conda.sh
 conda activate master-thesis
 
-# ── run ──────────────────────────────────────────────────────────────────
+# -- run ----------------------------------------------------------------------
 python run_pipeline.py
 
 echo "Job finished: $(date)"
