@@ -39,3 +39,13 @@ data/mouse/GCF_*.zip
 data/human/cai_scores.csv
 data/mouse/cai_scores.csv
 data/combined_cai_scores.csv
+
+# for other evaluations
+
+scripts/ablations.py
+scripts/build_cai_weights.py
+scripts/build_tai_weights.py
+scripts/cache_features.sbatch
+scripts/rna_fm_features.py
+scripts/run_ablations.sbatch
+scripts/common_weight.py
