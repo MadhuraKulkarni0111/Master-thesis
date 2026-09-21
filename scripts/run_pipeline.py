@@ -16,6 +16,10 @@ Outputs (per dataset, saved to the output_prefix defined in config.py)
     <prefix>_model_comparison.png     heatmap: top features across all 4 models
     <prefix>_top_features.csv         ranked table: importance + signed coef
 
+    NOTE: hand-crafted-vs-RNA-FM group importance plots are not produced —
+    RNA-FM is not implemented in this pipeline (rna_fm_features.py exists
+    in the repo but is unused; importance.py has no group_feature_importance()).
+
 Outputs (per dataset, saved to RESULTS_DIR from config.py)
 -------
     <label>_r2_results.csv            R² only (per-fold + OOF) — legacy format,
@@ -45,8 +49,8 @@ from config         import DATASETS
 from data_loader    import load_and_prepare
 from models         import fit_models
 from model_results  import save_r2_results, save_full_results
-from importance     import get_importances, save_importance_csv, group_feature_importance
-from visualise      import plot_top_features, plot_model_comparison, plot_group_importance
+from importance     import get_importances, save_importance_csv
+from visualise      import plot_top_features, plot_model_comparison
  
  
 def run_dataset(path, te_col, label, out_prefix, species):
@@ -77,12 +81,6 @@ def run_dataset(path, te_col, label, out_prefix, species):
         label, out_prefix
     )
     plot_model_comparison(importances, label, out_prefix)
-
-    # 5b. hand-crafted vs RNA-FM importance share (only meaningful once
-    # RNA-FM columns exist, but harmless either way — if USE_RNAFM is
-    # False in config.py the "RNA-FM" group is simply empty)
-    group_df = group_feature_importance(importances)
-    plot_group_importance(group_df, label, out_prefix)
 
     # 6. save CSV table
     save_importance_csv(
