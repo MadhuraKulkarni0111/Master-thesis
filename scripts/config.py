@@ -54,7 +54,7 @@ DATASETS = [
 # ── Sampling settings ─────────────────────────────────────────────────────────
 # Set to an integer to run on a subset of sequences (useful for quick testing).
 # Set to None to run on the full dataset.
-MAX_SAMPLES = None
+MAX_SAMPLES = 20
 
 # ── Feature engineering settings ─────────────────────────────────────────────
 

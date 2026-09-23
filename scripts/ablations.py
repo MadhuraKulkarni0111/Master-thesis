@@ -47,6 +47,23 @@ ABLATIONS = {
     "A13": _A8 + ["cai", "tai", "mfe"],  # full model, identical feature set to A12
 }
 
+# -----------------------------------------------------------------------------
+# CAI / tAI sub-study: for each base ablation A1-A6, add CAI and/or tAI on top,
+# independent of the main A1-A13 progression. Tests whether codon-optimality
+# signal (CAI) or tRNA-availability signal (tAI) adds value even before the
+# uAUG/Kozak/full-stack features are introduced (A7 onward).
+#
+#   A{n}_cai      = A{n} + cai
+#   A{n}_tai      = A{n} + tai
+#   A{n}_cai_tai  = A{n} + cai + tai
+# -----------------------------------------------------------------------------
+
+for _base_id in ["A1", "A2", "A3", "A4", "A5", "A6"]:
+    _base_groups = ABLATIONS[_base_id]
+    ABLATIONS[f"{_base_id}_cai"]     = _base_groups + ["cai"]
+    ABLATIONS[f"{_base_id}_tai"]     = _base_groups + ["tai"]
+    ABLATIONS[f"{_base_id}_cai_tai"] = _base_groups + ["cai", "tai"]
+
 # Sanity check: every group referenced here must be a real feature group.
 _VALID_GROUPS = {"length", "gc", "mono", "di", "kmer3", "codon",
                   "uaug", "kozak", "cai", "tai", "mfe"}

@@ -64,7 +64,7 @@ def get_importances(fitted_models, feature_names, X=None, y=None):
         )
 
     # ── SVR (RBF): permutation importance ────────────────────────────────
-    if "SVR" in fitted_models:
+    '''if "SVR" in fitted_models:
         if X is None or y is None:
             raise ValueError(
                 "X and y must be passed to get_importances() "
@@ -83,7 +83,7 @@ def get_importances(fitted_models, feature_names, X=None, y=None):
             np.clip(perm.importances_mean, 0, None),
             index=feature_names
         )
-
+    '''
     return imp
 
 
