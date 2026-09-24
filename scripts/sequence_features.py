@@ -317,10 +317,70 @@ FEATURE_FUNCS = {
     "mfe":    _feat_mfe,
 }
 
+# Regions a column can belong to. "window" = spans the UTR5/CDS boundary
+# (kozak, mfe_start); "full" = whole-transcript aggregate (gc_full, log_tx).
+VALID_REGIONS = {"utr5", "cds", "utr3", "full", "window"}
+
+# Exact-name lookups for columns whose region/group can't be inferred from
+# a simple prefix pattern (single global columns, not per-region triples).
+_EXACT_TAGS = {
+    "cai":          ("cai",    "cds"),
+    "tai":          ("tai",    "cds"),
+    "kozak_score":  ("kozak",  "window"),
+    "mfe_start":    ("mfe",    "window"),
+    "uAUG_count":   ("uaug",   "utr5"),
+    "log_utr5":     ("length", "utr5"),
+    "log_cds":      ("length", "cds"),
+    "log_utr3":     ("length", "utr3"),
+    "log_tx":       ("length", "full"),
+    "gc_utr5":      ("gc",     "utr5"),
+    "gc_cds":       ("gc",     "cds"),
+    "gc_utr3":      ("gc",     "utr3"),
+    "gc_full":      ("gc",     "full"),
+}
+
+
+def classify_column(colname):
+    """
+    Determine which feature GROUP and which REGION a column belongs to,
+    purely from its name — no need to touch the data or cache anything.
+
+    Used by data_loader to slice the cached full feature matrix down to
+    whatever an ablation's groups/regions filter asks for (see
+    ablations.py). Cheap enough (string parsing over ~300 column names)
+    that it's recomputed on every load rather than cached to disk.
+
+    Returns
+    -------
+    (group, region) : tuple of str
+        group  in FEATURE_FUNCS.keys()
+        region in VALID_REGIONS
+        ("unknown", "unknown") if the column doesn't match any known
+        pattern — should never happen for columns produced by
+        build_features(); a mismatch here means a new feature was added
+        to FEATURE_FUNCS without updating this classifier.
+    """
+    if colname in _EXACT_TAGS:
+        return _EXACT_TAGS[colname]
+
+    if colname.startswith("codon_"):
+        return "codon", "cds"
+
+    # mono/di/kmer3 columns are named "<region>_<nt-string>", e.g.
+    # "utr5_A" (mono, 1 char), "cds_AT" (di, 2 chars), "utr3_AAA" (kmer3, 3 chars)
+    if "_" in colname:
+        prefix, suffix = colname.split("_", 1)
+        if prefix in ("utr5", "cds", "utr3"):
+            group_by_len = {1: "mono", 2: "di", 3: "kmer3"}
+            group = group_by_len.get(len(suffix), "unknown")
+            return group, prefix
+
+    return "unknown", "unknown"
+
 
 # ── Master feature builder ────────────────────────────────────────────────────
 
-def build_features(df, species, groups=None, return_groups=False):
+def build_features(df, species, groups=None):
     """
     Engineer sequence features for every gene in the dataframe.
 
@@ -336,16 +396,12 @@ def build_features(df, species, groups=None, return_groups=False):
         Which feature groups to compute (see FEATURE_FUNCS keys above).
         None (default) computes every group — this is what should be
         used to build the cached full feature matrix; ablations then
-        slice columns out of that cache rather than calling this again.
-    return_groups : bool
-        If True, also return a dict {column_name: group_name} recording
-        which group produced each column. Needed once, when building the
-        full cached matrix, so later column-slicing by group is possible.
+        slice columns out of that cache (via classify_column) rather
+        than calling this again.
 
     Returns
     -------
     pd.DataFrame  (n_genes, n_features)
-    dict          {column_name: group_name}   (only if return_groups=True)
     """
     groups = list(FEATURE_FUNCS.keys()) if groups is None else groups
     unknown = set(groups) - set(FEATURE_FUNCS)
@@ -358,28 +414,16 @@ def build_features(df, species, groups=None, return_groups=False):
     tai_weights = load_tai_weights(species) if needs_tai else None
 
     records = []
-    col_to_group = {}
-
-    for i, (_, row) in enumerate(df.iterrows()):
+    for _, row in df.iterrows():
         utr5, cds, utr3 = extract_regions(row)
         full = utr5 + cds + utr3
         feat = {}
-
         for g in groups:
-            gfeat = FEATURE_FUNCS[g](
+            feat.update(FEATURE_FUNCS[g](
                 utr5, cds, utr3, full,
                 weights=weights, tai_weights=tai_weights,
-            )
-            feat.update(gfeat)
-            if i == 0:
-                for k in gfeat:
-                    col_to_group[k] = g
-
+            ))
         records.append(feat)
 
     print("Returning features")
-    X = pd.DataFrame(records, index=df.index)
-
-    if return_groups:
-        return X, col_to_group
-    return X
+    return pd.DataFrame(records, index=df.index)

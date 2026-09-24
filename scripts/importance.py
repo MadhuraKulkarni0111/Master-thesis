@@ -64,14 +64,17 @@ def get_importances(fitted_models, feature_names, X=None, y=None):
         )
 
     # ── SVR (RBF): permutation importance ────────────────────────────────
-    '''if "SVR" in fitted_models:
+    # n_repeats=5 kept at full precision (not reduced) per your call to
+    # avoid compromising results — rely on --cpus-per-task for speed
+    # instead (permutation_importance parallelises over features).
+    if "SVR" in fitted_models:
         if X is None or y is None:
             raise ValueError(
                 "X and y must be passed to get_importances() "
                 "when SVR is in the model set (needed for permutation importance)."
             )
         print("  Computing permutation importance for SVR "
-              "(this may take a few minutes)...")
+              "(this may take a while)...")
         perm = permutation_importance(
             fitted_models["SVR"], X, y,
             scoring="r2",
@@ -83,7 +86,7 @@ def get_importances(fitted_models, feature_names, X=None, y=None):
             np.clip(perm.importances_mean, 0, None),
             index=feature_names
         )
-    '''
+
     return imp
 
 
