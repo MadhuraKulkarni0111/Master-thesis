@@ -143,3 +143,16 @@ TAI_WEIGHTS_FILE = DATA_DIR / "combined_tai_weights.csv"
 
 START_WINDOW_UPSTREAM = 30
 START_WINDOW_DOWNSTREAM = 30
+
+
+# ------ RNA-FM embedding settings ---------------------------------------------
+# Per-sequence embeddings are cached here as <hash>.npy (hash includes the
+# pooling and max-length settings, so changing them never reuses stale vectors).
+RNAFM_CACHE_DIR = RESULTS_DIR / "rnafm_cache"
+
+# Model limit is 1024 tokens INCLUDING BOS/EOS, so at most 1022 nucleotides.
+RNAFM_MAX_LEN = 1022
+
+# How per-nucleotide vectors are reduced to one vector per gene:
+# "mean" (recommended), "max", or "cls" (BOS token; not a trained CLS token).
+RNAFM_POOLING = "mean"
