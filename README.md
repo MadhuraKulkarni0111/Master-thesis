@@ -151,7 +151,6 @@ dependencies:
   - viennarna
   - pip
   - pip:
-      - --extra-index-url https://download.pytorch.org/whl/cu121
       - torch
       - rna-fm
 ```
