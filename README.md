@@ -1,141 +1,238 @@
-# Sequence Analysis Pipeline
+# Translation Efficiency (TE) Feature Importance Pipeline
 
-All files and folders currently being used can be found in the "main" branch. Another branch named separate_functions is available on which work pertaining embeddings will be followed before merging them into the main branch again. 
+Predicts mRNA translation efficiency (TE) from sequence-derived features,
+and measures which features matter, using a family of **ablation studies**.
+Seven regression models are cross-validated on pre-defined folds for two
+datasets (human HCT116, mouse 4T1). An optional extension adds RNA-FM
+embeddings as features.
 
-The master_thesis branch consists of some initial code writting and can be ignored for now, git will be cleaned and updated (branched will be renamed) over the week making it easier to navigate. 
+---
 
-## Repository Structure
+## 1. Repository layout
 
-```text
-.
-├── requirements.txt
-├── data/
-│   ├── human_translation_efficiency_data.xlsx
-|   ├── mouse_translation_efficiency_data.xlsx
-|   ├── combined_tai_weights.csv
-|   └── combined_cai_weights.csv
-├── scripts/
-│   ├── config.py
-│   ├── sequence_features.py
-│   ├── data_loader.py
-│   ├── models.py
-│   ├── importance.py
-│   ├── visualise.py
-│   ├── model_results.py
-│   ├── run_pipeline.py
-|   |── build_cai_weights.py ----\
-|   |── build_tai_weights.py ----- > scripts for genrating the weights for the calculation of tai and cai
-|   └──common_weights.py -------/
-├── requirements.yaml
-└── results/
 ```
----
+feature_engineering/
+├── data/
+│   ├── Human_data.xlsx              # input: human dataset
+│   ├── Mouse_data.xlsx              # input: mouse dataset
+│   ├── combined_cai_weights.csv     # codon weights for CAI
+│   └── combined_tai_weights.csv     # codon weights for tAI
+├── scripts/
+│   ├── config.py                    # paths, hyperparameters, dataset list
+│   ├── ablations.py                 # ablation definitions (A, B, C, D families)
+│   ├── sequence_features.py         # feature engineering (11 feature groups)
+│   ├── data_loader.py               # Excel loading, feature cache, column slicing
+│   ├── models.py                    # 7 models + out-of-fold cross-validation
+│   ├── model_results.py             # R², MAE, RMSE, Pearson, Spearman -> CSV
+│   ├── importance.py                # feature importances -> CSV
+│   ├── visualise.py                 # bar charts and heatmaps
+│   ├── run_pipeline.py              # main entry point (ablations)
+│   ├── rna_fm_features.py           # RNA-FM embedding extraction (optional)
+│   ├── run_rnafm.py                 # entry point for the RNA-FM runs (optional)
+│   ├── cache_features.sbatch        # SLURM: build the feature cache
+│   ├── run_ablations.sbatch         # SLURM array: A1-A13
+│   ├── run_ablations_caitai.sbatch  # SLURM array: A1-A6 + CAI/tAI
+│   ├── run_ablations_bcd.sbatch     # SLURM array: B1-D4
+│   ├── run_pipeline.slurm           # SLURM: single run
+│   └── run_rnafm.sbatch             # SLURM array: RNA-FM runs (optional)
+└── results/                         # created automatically
+    ├── feature_cache/               # cached feature matrices (parquet)
+    ├── rnafm_cache/                 # cached RNA-FM vectors (optional)
+    └── <ablation_id>/               # one directory per ablation
+```
 
-## Updating paths 
-
-To run pipeline update the path to where your datasets are stored. This can be found in scripts/config.py. 
-
-"/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/data/Human_data.xlsx"<- update this for input directory for datasets 
-
-"/Users/madhurakulkarni/Desktop/master_thesis/feature_engineering/results/"<- update this for output directory for results
-
----
-
-## Pipeline Overview
-
-The entire workflow follows a sequence:
-
-Data → Feature Engineering → Model Training → Evaluation → Visualisation
-
-1. Data Loading
-
-   * Raw data is read from Excel files.
-   * Basic preprocessing and validation are performed.
-
-2. Feature Engineering
-
-   * Sequence data is parsed and transformed into numerical features.
-   * Missing values are handled and datasets are prepared for modeling.
-
-3. Model Training
-
-   * Machine learning models like Lasso, Elastic net, Random forest and LGBM are defined and trained.
-   * Cross-validation is used for evaluation.
-
-4. Feature Importance
-
-   * Importance scores are extracted from trained models.
-   * Results are saved for interpretation.
-
-5. Visualisation
-
-   * Plots such as bar charts and heatmaps are generated for analysis.
+All paths are derived from the location of `config.py`, so the project works
+from any directory as long as the `data/` and `scripts/` layout is kept.
 
 ---
 
-## Installation
+## 2. Input data
 
-A .yaml file is avaialbel with all of the dependencies required to run the entire pipeline to create the environment 
-use the below comman:
+Each Excel file needs these columns:
+
+| Column | Meaning |
+|---|---|
+| `tx_sequence` | Full transcript, laid out as 5'UTR + CDS + 3'UTR (T or U accepted) |
+| `utr5_size` | Length of the 5'UTR in nucleotides |
+| `cds_size` | Length of the CDS in nucleotides |
+| `fold` | Integer fold assignment (e.g. 0-9) used for cross-validation |
+| `TE_HCT116` / `TE_4T1` | Target TE value (human / mouse; set in `config.DATASETS`) |
+
+The CAI and tAI CSVs need a `codon` column plus `cai_weight_human`,
+`cai_weight_mouse` and `tai_weight_human`, `tai_weight_mouse`.
+
+Rows with a missing target or sequence are dropped.
+
+---
+
+## 3. How the pipeline works
+
+```
+config.py + ablations.py
+        |
+data_loader.py     read Excel -> build/load cached full feature matrix
+        |          -> select columns for the ablation -> NaN -> 0
+models.py          out-of-fold CV on the dataset's folds, then refit on all data
+        |
+model_results.py   metrics per fold + pooled out-of-fold
+importance.py      coefficients / MDI / gain / permutation importance
+visualise.py       feature-importance bars, model-comparison heatmap
+        |
+results/<ablation_id>/
+```
+
+**Feature cache.** The full feature matrix (all 11 groups, including the slow
+ViennaRNA MFE step) is computed **once per dataset** and saved as parquet.
+Every ablation reads that cache and just selects columns, so ablations never
+recompute features.
+
+### Feature groups (326 columns total)
+
+| Group | Columns | Description |
+|---|---|---|
+| `length` | 4 | log1p length of 5'UTR, CDS, 3'UTR, full transcript |
+| `gc` | 4 | GC fraction per region and full transcript |
+| `mono` | 12 | A/T/G/C frequency per region |
+| `di` | 48 | 16 dinucleotide frequencies per region |
+| `kmer3` | 192 | 64 trinucleotide frequencies per region (all frames) |
+| `codon` | 61 | In-frame sense-codon usage in the CDS |
+| `uaug` | 1 | Number of upstream AUGs in the 5'UTR |
+| `kozak` | 1 | Kozak-context match score around the start codon |
+| `cai` | 1 | Codon Adaptation Index |
+| `tai` | 1 | tRNA Adaptation Index |
+| `mfe` | 1 | Minimum free energy of a window around the start codon |
+
+### Models
+
+Lasso, ElasticNet, RandomForest, LightGBM, XGBoost, SVR (RBF), LinearSVM.
+Hyperparameters live in `config.py`.
+
+| Model | Importance reported |
+|---|---|
+| Lasso, ElasticNet, LinearSVM | absolute coefficient (signed coefficient also saved) |
+| RandomForest | mean decrease in impurity |
+| LightGBM, XGBoost | total gain |
+| SVR | permutation importance (5 repeats, R² drop) |
+
+### Ablation families (defined in `ablations.py`)
+
+| Family | Question | IDs |
+|---|---|---|
+| A | Main progression: how much does each feature group add? | A1-A13 (A13 = full model) |
+| A + CAI/tAI | Does codon optimality add signal before uAUG/Kozak? | `A{1..6}_cai`, `_tai`, `_cai_tai` |
+| B | Location: how much does each region explain alone? | B1 (5'UTR), B2 (CDS), B3 (3'UTR), B4, B5 |
+| C | Mechanism: initiation vs elongation | C1, C2, C3 |
+| D | Representation: 3-mers vs codons vs start-centred | D1-D4 |
+
+---
+
+## 4. Setup
+
+### 4.1 Environment
+
+Use Python 3.11 or 3.12. Corrected `environment.yml`:
+
+```yaml
+name: master-thesis
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.12
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - lightgbm
+  - xgboost
+  - openpyxl
+  - pyarrow
+  - viennarna
+  - pip
+  - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cu121
+      - torch
+      - rna-fm
+```
 
 ```bash
+conda env create -f environment.yml
 conda activate master-thesis
 ```
 
-## Running the Pipeline
+Note: `torch` and `rna-fm` are only needed for the RNA-FM extension. 
 
-To run the pipline it is first required to run the scripts build_cai_weights.py and build_tai_weights.py
-for the mouse and human data which serveds as an input for further feature importance calculation. 
 
-Run the complete workflow with:
+### 4.4 Cluster-specific notes
 
-```bash
-python scripts/build_cai_weights.py
-python scripts/build_tai_weights.py
-```
-Running the script build_cai_weights.py and build_tai_weights.py will generate a csv file in the folder data which acts as an input for cai and tai calculation in the main pipeline (utilised in scripts/sequwnce_features).
-
-Then run the main script for training the supervised models: 
-
-```bash
-python scripts/run_pipeline.py
-```
----
-
-## Module Responsibilities
-
-| Module                 | Responsibility                                                           |
-| ---------------------- | ------------------------------------------------------------------------ |
-| `config.py`            | Central configuration (paths, constants, hyperparameters, plot settings) |
-| `sequence_features.py` | Sequence parsing and feature engineering                                 |
-| `data_loader.py`       | Data loading, feature generation call, preprocessing, imputation         |
-| `models.py`            | Model definitions, training, and cross-validation                        |
-| `importance.py`        | Feature importance extraction and export                                 |
-| `visualise.py`         | All plots and visual outputs                                             |
-| `model_results.py`     | Outputs coefficient and cv results into a csv file                       |
-| `build_cai_weights.py` | Creats a csv with wweights for calcualtion of codon adaption index       |
-| `build_tai_weights.py` | Creats a csv with wweights for calcualtion of tRNA adaption index       |
+- The SLURM scripts activate conda from a hard-coded path
+  (`/home/mkulkar/software/miniforge3/...`). Edit it if your install differs.
+- Create the log folder before submitting, because SLURM will not:
+  `mkdir -p logs`.
+  ```
 
 ---
 
-## Output
+## 5. Running the pipeline
 
-After running the build_cai_weights and build_tai_weights, you will get:
+All commands run from the `scripts/` directory.
 
-* csv files for weights of humna and mouse datset
-* NCBI dodnloaded database for the assembled genome
-* combined csv file with both information of human and mouse weights (used as in input for cai calculation)
+### 5.1 Locally (small tests)
 
-After running the build_tai_weights, you will get:
+```bash
+# Quick test: set MAX_SAMPLES = 500 in config.py first, then:
+python run_pipeline.py --ablation A1 --dataset human
 
-* combined csv file with both information of human and mouse weights (used as in input for tai calculation)
+# One ablation, both datasets
+python run_pipeline.py --ablation B1
 
-After running the pipeline, you will get:
+# Everything 
+python run_pipeline.py
+```
 
-* Trained model results (cross-validation performance)
-* Feature importance CSV files
-* Visualisations (plots and heatmaps)
+`--dataset` accepts `human` or `mouse`. `--ablation` accepts any ID defined in
+`ablations.py`. Set `MAX_SAMPLES = None` for the full dataset, can be changed if required.
 
+### 5.2 On the cluster (recommended)
+
+**Step 1: build the feature cache once.** 
+
+```bash
+mkdir -p logs
+CACHE_JOB=$(sbatch --parsable cache_features.sbatch)
+```
+
+**Step 2: launch the ablation arrays after the cache finishes.**
+
+```bash
+sbatch --dependency=afterok:$CACHE_JOB run_ablations.sbatch          # A1-A13        (26 tasks)
+sbatch --dependency=afterok:$CACHE_JOB run_ablations_caitai.sbatch   # A1-A6 CAI/tAI (36 tasks)
+sbatch --dependency=afterok:$CACHE_JOB run_ablations_bcd.sbatch      # B1-D4         (24 tasks)
+```
+
+Each array task runs one (ablation, dataset) pair. Outputs go to separate
+directories, so tasks can run in parallel safely.
+---
+
+## 6. Outputs
+
+Each ablation gets its own directory, `results/<ablation_id>/`. For each
+dataset (`<label>` = `Human_HCT116` or `Mouse_4T1`):
+
+| File | Contents |
+|---|---|
+| `<label>_r2_results.csv` | R² per fold, mean, std, and pooled out-of-fold (`oof`) |
+| `<label>_eval_results.csv` | R², MAE, RMSE, Pearson r, Spearman rho, same row layout |
+| `<label>_top_features.csv` | top 50 features per model, with signed coefficient for linear models |
+| `<label>_feature_importance.png` | per-model bar charts (importance and coefficients) |
+| `<label>_model_comparison.png` | heatmap comparing top features across models |
+
+**Which number to report:** the `oof` row is the pooled out-of-fold score, where
+every gene is predicted exactly once by the fold that held it out. The
+`mean`/`std` rows show stability across folds.
+
+---
 
 
 
