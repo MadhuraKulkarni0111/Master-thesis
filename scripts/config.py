@@ -156,3 +156,26 @@ RNAFM_MAX_LEN = 1022
 # How per-nucleotide vectors are reduced to one vector per gene:
 # "mean" (recommended), "max", or "cls" (BOS token; not a trained CLS token).
 RNAFM_POOLING = "mean"
+
+# ------ Nucleotide Transformer (NT-v2) embedding settings ------------------------
+# DNA foundation model (InstaDeep), pretrained on 850 multi-species genomes.
+# Alternatives: ...-v2-50m-multi-species, -v2-100m-..., -v2-250m-...
+NT_MODEL_NAME = "InstaDeepAI/nucleotide-transformer-v2-500m-multi-species"
+ 
+# Local copy of the model (download once on the login node with
+# download_nt_model.py; jobs then load from here and never touch the network).
+NT_MODEL_DIR = BASE_DIR / "hf_models" / NT_MODEL_NAME.split("/")[-1]
+ 
+# Per-sequence embeddings cached here as <hash>.npy (key includes model name,
+# pooling and max tokens, so changing any of them never reuses stale vectors).
+NT_CACHE_DIR = RESULTS_DIR / "nt_cache"
+ 
+# NT uses 6-mer tokens, so 1000 tokens ~ 6000 nt (the length the model was
+# trained with). Longer transcripts are truncated from the 3' end.
+NT_MAX_TOKENS = 1000
+ 
+# "mean" (recommended, over all non-special tokens), "max", or "cls"
+NT_POOLING = "mean"
+ 
+# Sequences per forward pass. Lower this if the GPU runs out of memory.
+NT_BATCH_SIZE = 8
